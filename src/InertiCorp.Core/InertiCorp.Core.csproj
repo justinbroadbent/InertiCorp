@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>InertiCorp.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Content\EmailTemplates.json" />
+    <EmbeddedResource Include="Content\ProjectCards.json" />
+    <EmbeddedResource Include="Content\CrisisCards.json" />
+  </ItemGroup>
+</Project>

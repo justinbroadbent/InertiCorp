@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://inbox_panel"]
+
+[ext_resource type="Script" path="res://InboxPanel.cs" id="1_inboxpanel"]
+
+[node name="InboxPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(200, 0)
+offset_right = 200.0
+offset_bottom = 300.0
+script = ExtResource("1_inboxpanel")

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+  build-game:
+    name: Build Game (${{ matrix.platform }})
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Windows
+            export-preset: "Windows Desktop"
+            export-path: build/InertiCorp.exe
+          - platform: Linux
+            export-preset: "Linux"
+            export-path: build/InertiCorp.x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.5.1
+          use-dotnet: true
+          include-templates: true
+
+      - name: Verify Setup
+        run: |
+          godot --version
+          dotnet --version
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Generate .NET bindings
+        run: godot --headless --path src/InertiCorp.Game --build-solutions --quit || true
+
+      - name: Build .NET project
+        run: dotnet build --configuration Release
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Export Game
+        run: |
+          godot --headless --path src/InertiCorp.Game --export-release "${{ matrix.export-preset }}" "../../${{ matrix.export-path }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InertiCorp-${{ matrix.platform }}
+          path: ${{ matrix.export-path }}
+          retention-days: 7

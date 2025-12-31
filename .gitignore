@@ -1,0 +1,54 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+*.csproj.user
+build/
+
+# NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# Godot
+.godot/
+*.import
+*.translation
+*.pck
+
+# Godot export (keep export_presets.cfg for CI/CD)
+# export_presets.cfg  # Needed for automated builds
+
+# IDE
+.idea/
+*.swp
+*~
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

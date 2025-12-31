@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+  build-and-release:
+    name: Build & Release (${{ matrix.platform }})
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Windows
+            export-preset: "Windows Desktop"
+            artifact-name: InertiCorp-Windows.exe
+            export-path: build/InertiCorp.exe
+          - platform: Linux
+            export-preset: "Linux"
+            artifact-name: InertiCorp-Linux.x86_64
+            export-path: build/InertiCorp.x86_64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.5.1
+          use-dotnet: true
+          include-templates: true
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Generate .NET bindings
+        run: godot --headless --path src/InertiCorp.Game --build-solutions --quit || true
+
+      - name: Build .NET project
+        run: dotnet build --configuration Release
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Export Game
+        run: |
+          godot --headless --path src/InertiCorp.Game --export-release "${{ matrix.export-preset }}" "../../${{ matrix.export-path }}"
+
+      - name: Rename artifact
+        run: mv "${{ matrix.export-path }}" "build/${{ matrix.artifact-name }}"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/${{ matrix.artifact-name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

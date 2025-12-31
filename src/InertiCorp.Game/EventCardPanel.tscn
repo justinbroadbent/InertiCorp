@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3 uid="uid://event_card_panel"]
+
+[ext_resource type="Script" path="res://EventCardPanel.cs" id="1_eventcard"]
+
+[node name="EventCardPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(450, 350)
+offset_right = 450.0
+offset_bottom = 350.0
+script = ExtResource("1_eventcard")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Phase" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "SITUATION"
+horizontal_alignment = 1
+
+[node name="Title" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Event Title"
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="VBox"]
+layout_mode = 2
+
+[node name="Description" type="Label" parent="VBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+text = "Event description will appear here."
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="Choices" type="VBoxContainer" parent="VBox"]
+layout_mode = 2

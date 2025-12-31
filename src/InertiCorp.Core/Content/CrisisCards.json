@@ -1,0 +1,1144 @@
+{
+  "cards": [
+    {
+      "eventId": "CRISIS_001_AUDIT",
+      "title": "Audit Finding",
+      "description": "Internal audit found critical compliance gaps. They're demanding immediate action.",
+      "choices": [
+        {
+          "choiceId": "CHC_CEO_INTERVENTION",
+          "text": "Personally oversee remediation",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 25}, {"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 20}, {"meter": "Delivery", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_IMMEDIATE_REMEDIATION",
+          "text": "Immediate remediation",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 20}, {"meter": "Delivery", "delta": -10}],
+            "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": -15}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_RISK_ACCEPTANCE",
+          "text": "Accept and ignore the risk",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -10}, {"meter": "Governance", "delta": -15}],
+            "bad": [{"meter": "Runway", "delta": -20}, {"meter": "Governance", "delta": -25}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_002_KEY_PERSON",
+      "title": "Key Person Quits",
+      "description": "Your most critical team member just handed in their resignation. They have unique knowledge.",
+      "choices": [
+        {
+          "choiceId": "CHC_CEO_RETENTION",
+          "text": "Personal appeal from you",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 15}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_RETENTION_BONUS",
+          "text": "Offer retention bonus",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Runway", "delta": -15}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -20}],
+            "bad": [{"meter": "Runway", "delta": -25}, {"meter": "Morale", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_NO_NEGOTIATION",
+          "text": "Let them go, no negotiation",
+          "isCorporate": true,
+          "corporateIntensityDelta": 1,
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 5}],
+            "expected": [{"meter": "Delivery", "delta": -15}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Delivery", "delta": -25}, {"meter": "Morale", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_003_OUTAGE",
+      "title": "Production Outage",
+      "description": "A critical production system is down. Revenue is being impacted every minute.",
+      "choices": [
+        {
+          "choiceId": "CHC_HIRE_CONSULTANTS",
+          "text": "Fly in expensive consultants",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 25}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Delivery", "delta": 20}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Delivery", "delta": 15}, {"meter": "Runway", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_ALL_HANDS",
+          "text": "All hands on deck",
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 20}, {"meter": "Morale", "delta": -10}],
+            "expected": [{"meter": "Delivery", "delta": 15}, {"meter": "Morale", "delta": -15}],
+            "bad": [{"meter": "Delivery", "delta": 5}, {"meter": "Morale", "delta": -20}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_VENDOR",
+          "text": "Blame the vendor publicly",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_004_XMAS_PARTY",
+      "title": "Holiday Party Incident",
+      "description": "The VP of Sales got extremely drunk at the company holiday party and made inappropriate comments to several employees. Someone recorded it on their phone.",
+      "choices": [
+        {
+          "choiceId": "CHC_CEO_APOLOGY_TOUR",
+          "text": "Personal damage control tour",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Alignment", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": -5}, {"meter": "Alignment", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_VP",
+          "text": "Terminate the VP immediately",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 10}, {"meter": "Governance", "delta": 15}],
+            "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Delivery", "delta": -20}, {"meter": "Governance", "delta": 5}]
+          }
+        },
+        {
+          "choiceId": "CHC_COVER_UP",
+          "text": "Make the video disappear",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -15}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_005_KARAOKE",
+      "title": "Viral Karaoke Disaster",
+      "description": "The CFO's enthusiastic but deeply unfortunate karaoke performance at the team offsite has gone viral on TikTok. The hashtag #CorporateCringe is trending.",
+      "choices": [
+        {
+          "choiceId": "CHC_LEAN_INTO_IT",
+          "text": "Hire a PR firm to spin it as 'authentic leadership'",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Morale", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": 5}],
+            "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Runway", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_ISSUE_STATEMENT",
+          "text": "Issue formal statement",
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -5}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_IGNORE_VIRAL",
+          "text": "Pretend it doesn't exist",
+          "isCorporate": true,
+          "corporateIntensityDelta": 1,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -10}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_006_INTERN_DROP",
+      "title": "Intern Dropped Production Database",
+      "description": "The summer intern was given production access 'to learn' and accidentally ran DROP DATABASE. The backups haven't been tested in 8 months.",
+      "choices": [
+        {
+          "choiceId": "CHC_BRING_IN_EXPERTS",
+          "text": "Bring in data recovery specialists",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Governance", "delta": 5}, {"meter": "Runway", "delta": -15}],
+            "bad": [{"meter": "Delivery", "delta": -10}, {"meter": "Runway", "delta": -20}]
+          }
+        },
+        {
+          "choiceId": "CHC_REBUILD_FROM_BACKUP",
+          "text": "Attempt recovery from backups",
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 10}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Delivery", "delta": -15}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Delivery", "delta": -30}, {"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_INTERN",
+          "text": "Fire the intern, claim it was malicious",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -15}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_007_REPLY_ALL",
+      "title": "Catastrophic Reply-All",
+      "description": "A mid-level manager accidentally sent a brutally honest email about layoff plans to the entire company. The email included the phrase 'dead weight employees' and a list of names.",
+      "choices": [
+        {
+          "choiceId": "CHC_EMERGENCY_TOWNHALL",
+          "text": "Emergency all-hands meeting",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 10}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -5}, {"meter": "Alignment", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_MANAGER",
+          "text": "Terminate the manager",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 5}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -10}, {"meter": "Governance", "delta": 5}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_DENY_LAYOFFS",
+          "text": "Deny any layoff plans exist",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -10}, {"meter": "Governance", "delta": -15}],
+            "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_008_EXPENSES",
+      "title": "Questionable Executive Expenses",
+      "description": "Finance flagged the VP of Marketing's expense report: $47,000 at a Vegas 'team building' event, including $8,000 for 'client entertainment' at an establishment whose name ends in 'Gentlemen's Club.'",
+      "choices": [
+        {
+          "choiceId": "CHC_QUIET_REPAYMENT",
+          "text": "Quietly arrange repayment",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": -5}, {"meter": "Morale", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FORMAL_INVESTIGATION",
+          "text": "Launch formal investigation",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 20}, {"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_APPROVE_ANYWAY",
+          "text": "Approve it - we need them",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Runway", "delta": -15}, {"meter": "Morale", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_009_PRESENTATION",
+      "title": "Board Presentation Disaster",
+      "description": "The Director of Strategy just presented last year's numbers to the board instead of this year's. They're asking why revenue 'went backwards.' The director is sweating visibly.",
+      "choices": [
+        {
+          "choiceId": "CHC_CEO_TAKEOVER",
+          "text": "Take over the presentation personally",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Governance", "delta": 5}],
+            "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Morale", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_CALL_BREAK",
+          "text": "Call an emergency break",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 5}, {"meter": "Alignment", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_DIRECTOR",
+          "text": "Throw the director under the bus",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -5}],
+            "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Alignment", "delta": -10}, {"meter": "Delivery", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_010_ROGUE_VP",
+      "title": "VP Announces Unauthorized Partnership",
+      "description": "The VP of Business Development just announced a major partnership with a competitor on LinkedIn. Legal wasn't consulted. The board wasn't told. The partner company has no idea what she's talking about.",
+      "choices": [
+        {
+          "choiceId": "CHC_SAVE_THE_DEAL",
+          "text": "Scramble to actually close the deal",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 20}, {"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Runway", "delta": -15}],
+            "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Runway", "delta": -20}, {"meter": "Governance", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_PUBLIC_RETRACTION",
+          "text": "Issue public retraction",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Alignment", "delta": -5}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Alignment", "delta": -25}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_GASLIGHT",
+          "text": "Claim it was 'aspirational'",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -15}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -25}, {"meter": "Governance", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_011_HR_LEAK",
+      "title": "Salary Data Leaked",
+      "description": "Someone posted a spreadsheet with everyone's salaries to the company Slack. The pay disparities are... significant. Several employees are demanding explanations.",
+      "choices": [
+        {
+          "choiceId": "CHC_SALARY_ADJUSTMENT",
+          "text": "Announce immediate pay equity review",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -15}, {"meter": "Governance", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -25}]
+          }
+        },
+        {
+          "choiceId": "CHC_TRANSPARENCY_APPROACH",
+          "text": "Embrace radical transparency",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -5}, {"meter": "Alignment", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_HUNT_LEAKER",
+          "text": "Launch investigation to find the leaker",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -20}, {"meter": "Governance", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": -30}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_012_FOOD_POISON",
+      "title": "Leadership Offsite Food Poisoning",
+      "description": "The entire executive team got food poisoning at the leadership offsite. Half of them are in the hospital. The company has no succession plan and a board meeting tomorrow.",
+      "choices": [
+        {
+          "choiceId": "CHC_HIRE_INTERIM",
+          "text": "Hire interim executives immediately",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": -15}, {"meter": "Delivery", "delta": 5}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Runway", "delta": -20}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_POSTPONE_MEETING",
+          "text": "Request board meeting postponement",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 5}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -20}]
+          }
+        },
+        {
+          "choiceId": "CHC_WEEKEND_AT_BERNIES",
+          "text": "Prop them up on Zoom, claim 'connection issues'",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_013_AUTOMATION",
+      "title": "Automated Email Gone Wrong",
+      "description": "The marketing team's 'personalized' email campaign has a bug. It sent 50,000 customers an email starting with 'Dear [CUSTOMER_NAME], your order of [PRODUCT_NAME] will arrive [ERROR_NULL_REFERENCE]...'",
+      "choices": [
+        {
+          "choiceId": "CHC_APOLOGY_DISCOUNT",
+          "text": "Send apology with 20% discount",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": 5}, {"meter": "Runway", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_APOLOGIZE_SIMPLE",
+          "text": "Send simple apology email",
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 10}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -5}, {"meter": "Governance", "delta": 5}],
+            "bad": [{"meter": "Alignment", "delta": -15}, {"meter": "Governance", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_PRETEND_PHISHING",
+          "text": "Claim it was a phishing test",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -15}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -25}, {"meter": "Governance", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_014_AI_BOT",
+      "title": "Customer Service Bot Malfunction",
+      "description": "The new AI customer service bot has started telling customers to 'seek professional help' and 'consider their life choices' when they complain. Screenshots are everywhere.",
+      "choices": [
+        {
+          "choiceId": "CHC_TURN_INTO_MARKETING",
+          "text": "Hire crisis PR to make it a 'viral moment'",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Morale", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Runway", "delta": -5}],
+            "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Governance", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_DISABLE_BOT",
+          "text": "Disable the bot, issue apology",
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 10}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": -5}, {"meter": "Governance", "delta": 5}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -15}, {"meter": "Delivery", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_BOT_WAS_RIGHT",
+          "text": "Double down - the bot has a point",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": -20}, {"meter": "Governance", "delta": -15}],
+            "bad": [{"meter": "Alignment", "delta": -30}, {"meter": "Governance", "delta": -25}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_015_TWITTER",
+      "title": "Corporate Social Media Compromised",
+      "description": "The company Twitter account posted 'We hate our customers almost as much as we hate working here.' Social media manager claims they were 'hacked' but IT can't find evidence of intrusion.",
+      "choices": [
+        {
+          "choiceId": "CHC_HUMOROUS_RESPONSE",
+          "text": "Hire comedy writers for humorous response",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 20}, {"meter": "Morale", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Morale", "delta": 5}],
+            "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Governance", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_SOCIAL_MANAGER",
+          "text": "Fire the social media manager",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_CLAIM_ACTUALLY_HACKED",
+          "text": "Insist it was sophisticated hackers",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -10}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -20}, {"meter": "Governance", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_016_LAUNCH_FAIL",
+      "title": "Product Demo Goes Catastrophically Wrong",
+      "description": "The big product launch demo just crashed live on stage. The engineering VP muttered 'works on my machine' loudly enough for the front row to hear. Investors are present.",
+      "choices": [
+        {
+          "choiceId": "CHC_PRIVATE_DEMO",
+          "text": "Arrange private demos with investors",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Runway", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Delivery", "delta": -15}, {"meter": "Runway", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_DELAY_LAUNCH",
+          "text": "Delay launch, do it right",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_SHIP_ANYWAY",
+          "text": "Ship it anyway, fix later",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}, {"meter": "Delivery", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_017_OFFICE_PET",
+      "title": "Office Comfort Animal Incident",
+      "description": "The 'office comfort animal' policy has backfired. Someone brought an emotional support peacock that attacked the CFO. Legal is asking who approved this policy.",
+      "choices": [
+        {
+          "choiceId": "CHC_PREMIUM_VET",
+          "text": "Pay for CFO's 'recovery retreat' and peacock rehoming",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_BAN_ANIMALS",
+          "text": "Ban all animals, issue formal policy",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Morale", "delta": -5}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -25}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_CFO",
+          "text": "Suggest CFO provoked the peacock",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_018_CRYPTO_BRO",
+      "title": "Executive Crypto Scheme Exposed",
+      "description": "The Head of Innovation has been mining cryptocurrency on company servers. IT noticed when the electricity bill tripled. He's asking if this can be written off as 'R&D.'",
+      "choices": [
+        {
+          "choiceId": "CHC_QUIET_TERMINATION",
+          "text": "Quiet termination with NDA",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Runway", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -10}, {"meter": "Runway", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_PUBLIC_FIRING",
+          "text": "Very public termination",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 20}, {"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_LEGITIMIZE_MINING",
+          "text": "Rebrand as 'Web3 Innovation Initiative'",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 15}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Runway", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_019_GLASSDOOR",
+      "title": "Glassdoor Meltdown",
+      "description": "A viral Glassdoor review describes your company as 'a dumpster fire managed by raccoons.' It has 847 'helpful' votes and counting. The CEO is named specifically.",
+      "choices": [
+        {
+          "choiceId": "CHC_ADDRESS_CONCERNS",
+          "text": "Public response addressing each concern",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Alignment", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_IGNORE_REVIEW",
+          "text": "Ignore it - it'll blow over",
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_FAKE_REVIEWS",
+          "text": "Flood Glassdoor with fake positive reviews",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_020_DIVERSITY_LAWSUIT",
+      "title": "Discrimination Lawsuit Filed",
+      "description": "A former employee has filed a discrimination lawsuit. Their lawyer has emails. Lots of emails. Several are from people still in leadership.",
+      "choices": [
+        {
+          "choiceId": "CHC_SETTLE_QUIETLY",
+          "text": "Settle quickly and quietly",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": -10}],
+            "expected": [{"meter": "Governance", "delta": 5}, {"meter": "Runway", "delta": -20}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Runway", "delta": -30}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIGHT_LAWSUIT",
+          "text": "Fight it in court",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Runway", "delta": -15}],
+            "expected": [{"meter": "Runway", "delta": -25}, {"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Runway", "delta": -35}, {"meter": "Alignment", "delta": -25}, {"meter": "Governance", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_SMEAR_PLAINTIFF",
+          "text": "Launch PR campaign against the plaintiff",
+          "isCorporate": true,
+          "corporateIntensityDelta": 4,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -20}, {"meter": "Morale", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": -30}, {"meter": "Morale", "delta": -25}, {"meter": "Alignment", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_021_COMPETITOR_POACH",
+      "title": "Mass Poaching Attempt",
+      "description": "Your main competitor has made offers to your entire engineering team. They're offering 40% raises and unlimited PTO. Half the team is already in final rounds.",
+      "choices": [
+        {
+          "choiceId": "CHC_RETENTION_PACKAGE",
+          "text": "Emergency retention packages for everyone",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -20}],
+            "bad": [{"meter": "Runway", "delta": -30}, {"meter": "Morale", "delta": 5}]
+          }
+        },
+        {
+          "choiceId": "CHC_LET_THEM_GO",
+          "text": "Let them go, hire replacements",
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 5}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Delivery", "delta": -30}, {"meter": "Morale", "delta": -20}, {"meter": "Governance", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_ENFORCE_NONCOMPETE",
+          "text": "Threaten to enforce non-compete clauses",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -20}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -30}, {"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_022_DATA_BREACH",
+      "title": "Customer Data Breach",
+      "description": "Hackers got in through a vendor's system. They have customer names, emails, and passwords. The security team knew about the vulnerability but 'deprioritized' the fix.",
+      "choices": [
+        {
+          "choiceId": "CHC_FULL_DISCLOSURE",
+          "text": "Immediate full disclosure and free credit monitoring",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": -15}, {"meter": "Alignment", "delta": -5}],
+            "bad": [{"meter": "Runway", "delta": -25}, {"meter": "Alignment", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_MINIMAL_DISCLOSURE",
+          "text": "Minimal required disclosure only",
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": -5}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": -20}, {"meter": "Alignment", "delta": -25}, {"meter": "Morale", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_VENDOR_BREACH",
+          "text": "Blame the vendor entirely",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Alignment", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}, {"meter": "Runway", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_023_UNION_DRIVE",
+      "title": "Unionization Effort",
+      "description": "Word has leaked that employees are organizing a union. Someone found authorization cards in the break room printer. The board is demanding 'action.'",
+      "choices": [
+        {
+          "choiceId": "CHC_ADDRESS_ISSUES",
+          "text": "Address underlying workplace issues",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -15}],
+            "bad": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -20}]
+          }
+        },
+        {
+          "choiceId": "CHC_NEUTRAL_STANCE",
+          "text": "Remain neutral, let employees decide",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 10}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -5}, {"meter": "Alignment", "delta": -5}],
+            "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_UNION_BUST",
+          "text": "Hire union avoidance consultants",
+          "isCorporate": true,
+          "corporateIntensityDelta": 4,
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -25}, {"meter": "Governance", "delta": -15}],
+            "bad": [{"meter": "Morale", "delta": -35}, {"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_024_EXEC_AFFAIR",
+      "title": "Executive Relationship Scandal",
+      "description": "The CTO and VP of HR have been having an affair. It's now public knowledge because they were caught in the supply closet. They both report to you.",
+      "choices": [
+        {
+          "choiceId": "CHC_TRANSFER_ONE",
+          "text": "Transfer one to a different department",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_IGNORE_AFFAIR",
+          "text": "Ignore it - their personal lives aren't our business",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Governance", "delta": -20}, {"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_BOTH",
+          "text": "Terminate both for policy violation",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}],
+            "expected": [{"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -15}],
+            "bad": [{"meter": "Delivery", "delta": -30}, {"meter": "Morale", "delta": -25}, {"meter": "Governance", "delta": -10}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_025_PRODUCT_RECALL",
+      "title": "Product Safety Recall",
+      "description": "Quality discovered a safety issue in a product that shipped to 100,000 customers. Engineering knew about it but classified it as 'edge case.' Two customers were injured.",
+      "choices": [
+        {
+          "choiceId": "CHC_FULL_RECALL",
+          "text": "Immediate full recall and compensation",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 20}, {"meter": "Alignment", "delta": 15}],
+            "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Runway", "delta": -25}, {"meter": "Alignment", "delta": 5}],
+            "bad": [{"meter": "Runway", "delta": -35}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_QUIET_RECALL",
+          "text": "Quiet recall to reported affected units only",
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": -10}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Alignment", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -25}, {"meter": "Runway", "delta": -20}]
+          }
+        },
+        {
+          "choiceId": "CHC_DENY_ISSUE",
+          "text": "Deny any product defect exists",
+          "isCorporate": true,
+          "corporateIntensityDelta": 4,
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}],
+            "bad": [{"meter": "Governance", "delta": -35}, {"meter": "Alignment", "delta": -30}, {"meter": "Runway", "delta": -25}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_026_FOUNDER_TANTRUM",
+      "title": "Founder Public Meltdown",
+      "description": "The company founder (who still sits on the board) went on a podcast and called your strategy 'idiotic' and your leadership 'the B-team.' The clip is trending.",
+      "choices": [
+        {
+          "choiceId": "CHC_PRIVATE_CONVERSATION",
+          "text": "Private conversation to align",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -5}],
+            "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_PUBLIC_RESPONSE",
+          "text": "Issue diplomatic public response",
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 10}, {"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -5}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_PUSH_FOUNDER_OUT",
+          "text": "Orchestrate founder's board removal",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": -20}, {"meter": "Governance", "delta": -5}],
+            "bad": [{"meter": "Alignment", "delta": -30}, {"meter": "Governance", "delta": -15}, {"meter": "Morale", "delta": -10}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_027_ENVIRONMENTAL",
+      "title": "Environmental Violation Discovered",
+      "description": "An internal audit found we've been disposing of e-waste illegally for 3 years. The vendor we hired was just dumping it in a vacant lot. Regulators haven't noticed yet.",
+      "choices": [
+        {
+          "choiceId": "CHC_SELF_REPORT",
+          "text": "Self-report and remediate",
+          "hasPCCost": true,
+          "pcCost": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 20}, {"meter": "Alignment", "delta": 10}],
+            "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Runway", "delta": -20}],
+            "bad": [{"meter": "Runway", "delta": -30}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIX_QUIETLY",
+          "text": "Fix the process, hope no one notices",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 5}, {"meter": "Runway", "delta": -10}],
+            "expected": [{"meter": "Governance", "delta": -10}, {"meter": "Runway", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": -25}, {"meter": "Runway", "delta": -25}, {"meter": "Alignment", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_BLAME_VENDOR_ENV",
+          "text": "Claim no knowledge, blame the vendor",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Runway", "delta": 5}],
+            "expected": [{"meter": "Governance", "delta": -15}, {"meter": "Alignment", "delta": -15}],
+            "bad": [{"meter": "Governance", "delta": -30}, {"meter": "Alignment", "delta": -25}, {"meter": "Runway", "delta": -20}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_028_BURNOUT_CRISIS",
+      "title": "Team Burnout Emergency",
+      "description": "Three senior engineers were hospitalized with stress-related illness in the same week. Their manager's Slack message history shows them demanding 80-hour weeks. The story is on Hacker News.",
+      "choices": [
+        {
+          "choiceId": "CHC_MANDATORY_REST",
+          "text": "Mandatory PTO and workload review",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Delivery", "delta": -15}],
+            "bad": [{"meter": "Delivery", "delta": -25}, {"meter": "Morale", "delta": 5}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_MANAGER_BURNOUT",
+          "text": "Fire the manager, issue statement",
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 15}, {"meter": "Governance", "delta": 15}],
+            "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_DENY_PRESSURE",
+          "text": "Deny any pressure, call it 'isolated incidents'",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Delivery", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -15}],
+            "bad": [{"meter": "Morale", "delta": -30}, {"meter": "Alignment", "delta": -25}, {"meter": "Governance", "delta": -15}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_029_INVESTOR_LEAK",
+      "title": "Investor Due Diligence Leak",
+      "description": "A potential acquirer's due diligence team leaked your financials to a tech blog. Everyone now knows your burn rate and that runway is shorter than the press releases claimed.",
+      "choices": [
+        {
+          "choiceId": "CHC_TRANSPARENT_UPDATE",
+          "text": "Transparent update to all stakeholders",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -5}]
+          }
+        },
+        {
+          "choiceId": "CHC_DISPUTE_NUMBERS",
+          "text": "Dispute the leaked numbers",
+          "outcomes": {
+            "good": [{"meter": "Alignment", "delta": 5}],
+            "expected": [{"meter": "Alignment", "delta": -10}, {"meter": "Governance", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -20}, {"meter": "Governance", "delta": -15}]
+          }
+        },
+        {
+          "choiceId": "CHC_SUE_FOR_NDA",
+          "text": "Threaten lawsuit for NDA breach",
+          "isCorporate": true,
+          "corporateIntensityDelta": 2,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Alignment", "delta": -15}, {"meter": "Runway", "delta": -10}],
+            "bad": [{"meter": "Alignment", "delta": -25}, {"meter": "Runway", "delta": -15}, {"meter": "Governance", "delta": -10}]
+          }
+        }
+      ]
+    },
+    {
+      "eventId": "CRISIS_030_MEETING_CULTURE",
+      "title": "Meeting Culture Rebellion",
+      "description": "Someone posted the company's average meeting load (32 hours/week per employee) on Twitter. The engineering team has declared 'Meeting Bankruptcy' and is refusing all non-essential meetings.",
+      "choices": [
+        {
+          "choiceId": "CHC_MEETING_REFORM",
+          "text": "Launch comprehensive meeting reform",
+          "hasPCCost": true,
+          "pcCost": 2,
+          "outcomes": {
+            "good": [{"meter": "Morale", "delta": 20}, {"meter": "Delivery", "delta": 15}],
+            "expected": [{"meter": "Morale", "delta": 10}, {"meter": "Delivery", "delta": 5}],
+            "bad": [{"meter": "Morale", "delta": 5}, {"meter": "Governance", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_ENFORCE_ATTENDANCE",
+          "text": "Enforce meeting attendance policies",
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 10}],
+            "expected": [{"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}],
+            "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+          }
+        },
+        {
+          "choiceId": "CHC_FIRE_ORGANIZER",
+          "text": "Fire the 'ringleader' as an example",
+          "isCorporate": true,
+          "corporateIntensityDelta": 3,
+          "outcomes": {
+            "good": [{"meter": "Governance", "delta": 5}],
+            "expected": [{"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -15}],
+            "bad": [{"meter": "Morale", "delta": -35}, {"meter": "Delivery", "delta": -25}, {"meter": "Alignment", "delta": -20}]
+          }
+        }
+      ]
+    }
+  ]
+}

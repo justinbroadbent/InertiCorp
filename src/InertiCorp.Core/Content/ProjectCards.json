@@ -1,0 +1,1159 @@
+{
+  "cards": [
+    {
+      "cardId": "PROJ_DIGITAL_TRANSFORMATION",
+      "title": "Digital Transformation",
+      "description": "Embark on a company-wide digital transformation journey.",
+      "flavorText": "\"We're not sure what it means, but McKinsey said we need it.\"",
+      "extendedDescription": "Nobody knows what 'digital transformation' actually means, but the consultants assured us it's essential. We'll spend $50 million on new software that does exactly what the old software did, but in the cloud. Every department will have to 're-imagine their customer journey' and 'leverage data-driven insights.' The project will take 3x longer than planned and the CEO will declare victory regardless of outcome.",
+      "category": "Corporate",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Alignment", "delta": 10}, {"profit": 15}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -10}, {"profit": -5}],
+        "bad": [{"meter": "Delivery", "delta": -10}, {"meter": "Runway", "delta": -20}, {"meter": "Morale", "delta": -5}, {"profit": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_CLOUD_MIGRATION",
+      "title": "Lift and Shift to Cloud",
+      "description": "Migrate all systems to the cloud because that's what modern companies do.",
+      "flavorText": "\"It's like our data center, but someone else's problem now.\"",
+      "extendedDescription": "The board heard 'cloud' at a conference and now everything must move there immediately. We'll take our beautifully optimized on-prem systems and cram them into virtual machines that cost 10x more to run. When the first AWS bill arrives, there will be an emergency meeting. The security team will have concerns. Those concerns will be noted and then ignored.",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 10}, {"meter": "Governance", "delta": 10}, {"profit": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -15}, {"profit": -10}],
+        "bad": [{"meter": "Delivery", "delta": -15}, {"meter": "Runway", "delta": -25}, {"meter": "Governance", "delta": -10}, {"profit": -25}]
+      }
+    },
+    {
+      "cardId": "PROJ_AI_CENTER",
+      "title": "AI Center of Excellence",
+      "description": "Establish a dedicated team to explore AI opportunities.",
+      "flavorText": "\"We put 'AI' in the press release. Stock up 4%.\"",
+      "extendedDescription": "Hire 12 data scientists, give them a cool office space with beanbags, and wait for the magic. They'll spend 6 months cleaning data, 3 months building a model that's 2% better than a spreadsheet, and the rest of the year explaining to executives why we can't just 'add AI to that.' Investors love it though. They don't understand it, but they love it.",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 25}, {"meter": "Delivery", "delta": 5}, {"profit": 25}],
+        "expected": [{"meter": "Runway", "delta": 15}, {"meter": "Delivery", "delta": -5}, {"profit": 5}],
+        "bad": [{"meter": "Runway", "delta": 5}, {"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -10}, {"profit": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_BLOCKCHAIN",
+      "title": "Enterprise Blockchain Initiative",
+      "description": "Explore blockchain applications for... something. Supply chain? Probably.",
+      "flavorText": "\"It's like a database, but slower and more expensive.\"",
+      "extendedDescription": "The CEO's nephew explained blockchain at Thanksgiving and now we're 'exploring Web3 opportunities.' We'll partner with a startup that will definitely not exist in 18 months, announce a pilot program that will never leave pilot, and issue a press release using the words 'immutable,' 'decentralized,' and 'trustless.' Engineers will quietly build a normal database and tell the board it's 'blockchain-inspired.'",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 15}, {"meter": "Governance", "delta": 5}, {"profit": 10}],
+        "expected": [{"meter": "Runway", "delta": 5}, {"meter": "Delivery", "delta": -10}, {"profit": -8}],
+        "bad": [{"meter": "Runway", "delta": -10}, {"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -15}, {"profit": -18}]
+      }
+    },
+    {
+      "cardId": "PROJ_AGILE",
+      "title": "Agile at Scale",
+      "description": "Transform the entire organization to agile methodology.",
+      "flavorText": "\"We added more meetings and called it 'agile.'\"",
+      "extendedDescription": "Hire an army of Scrum Masters. Rename all your teams to 'squads.' Add daily standups to everyone's calendar. Create elaborate Jira workflows that take longer to update than the actual work. Executives will still demand fixed deadlines and detailed upfront plans, but now they'll ask for them 'in an agile way.' Warning: May cause spontaneous eye-rolling among engineers.",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Morale", "delta": -10}],
+        "bad": [{"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_GLOBAL_OP_MODEL",
+      "title": "Global Operating Model",
+      "description": "Redesign the entire company structure for 'efficiency.'",
+      "flavorText": "\"We're not laying people off. We're 'right-sizing.'\"",
+      "extendedDescription": "A massive reorganization disguised as 'operating model optimization.' Consultants will produce a 400-slide deck showing how we can save $200M by 'streamlining' (firing people), 'off-shoring' (firing people here, hiring cheaper people elsewhere), and 'eliminating redundancies' (firing people). Surviving employees will do 3 jobs for the same pay and update their LinkedIn profiles 'just in case.'",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 4,
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 20}, {"profit": 30}],
+        "expected": [{"meter": "Runway", "delta": 10}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}, {"profit": 10}],
+        "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -20}, {"meter": "Alignment", "delta": -15}, {"profit": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_CULTURE",
+      "title": "Culture & Values Refresh",
+      "description": "Rebrand our corporate values with new posters and a values app.",
+      "flavorText": "\"We replaced 'Integrity' with 'Authentic Integrity.' Huge improvement.\"",
+      "extendedDescription": "Spend $5 million on new motivational posters, a mandatory culture workshop, and an app where employees can give each other virtual 'values badges.' The new values will be carefully crafted to be as generic as possible: 'Innovation,' 'Customer Focus,' 'Teamwork.' Same values as every other Fortune 500 company. Employees will be required to incorporate the new values into their performance reviews while leadership continues to ignore them entirely.",
+      "category": "Corporate",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 10}, {"meter": "Alignment", "delta": 15}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_WORKPLACE_FUTURE",
+      "title": "Workplace of Tomorrow",
+      "description": "Redesign all offices with hot-desking and collaboration zones.",
+      "flavorText": "\"You don't need a desk. You need an 'experience.'\"",
+      "extendedDescription": "Remove everyone's desks and replace them with 'neighborhoods,' 'collaboration pods,' and a 'rejuvenation zone' that's just beanbags near the emergency exit. Employees will arrive at 6am to claim a good spot, then spend all day on Zoom calls in phone booths the size of coffins. Executives will keep their private offices. Real estate costs go down, resignation rates go up.",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 15}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"meter": "Runway", "delta": 10}, {"meter": "Morale", "delta": -10}],
+        "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_ERP",
+      "title": "Enterprise Resource Planning Overhaul",
+      "description": "Replace our legacy ERP with a modern solution.",
+      "flavorText": "\"The vendor promised it would only take 18 months. That was 4 years ago.\"",
+      "extendedDescription": "The graveyard of corporate IT is filled with ERP projects. We'll hire an army of consultants who bill more per hour than our doctors, customize the software until it's unrecognizable, and go live on a date chosen for its astrological significance rather than readiness. Finance won't be able to close the books for 3 months. But at least we'll have real-time dashboards nobody looks at.",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 20}, {"meter": "Governance", "delta": 15}, {"profit": 20}],
+        "expected": [{"meter": "Delivery", "delta": -5}, {"meter": "Runway", "delta": -20}, {"meter": "Governance", "delta": 5}, {"profit": -15}],
+        "bad": [{"meter": "Delivery", "delta": -25}, {"meter": "Runway", "delta": -30}, {"meter": "Governance", "delta": -15}, {"profit": -35}]
+      }
+    },
+    {
+      "cardId": "PROJ_CUSTOMER_360",
+      "title": "Customer 360 Platform",
+      "description": "Build a unified view of all customer data and touchpoints.",
+      "flavorText": "\"We'll finally know everything about our customers. Legally.\"",
+      "extendedDescription": "Create a 'single source of truth' for customer data by merging 47 different databases that have been accumulating since 1997. The data quality team will discover that 'John Smith' appears 50,000 times and might be anywhere from 1 to 47 different people. The privacy team will have concerns about GDPR. Sales will refuse to use it because their spreadsheets 'just work better.'",
+      "category": "Action",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -15}],
+        "bad": [{"meter": "Delivery", "delta": -10}, {"meter": "Governance", "delta": -15}, {"meter": "Runway", "delta": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_DATA_LAKE",
+      "title": "Enterprise Data Lake",
+      "description": "Consolidate all company data into a central analytics platform.",
+      "flavorText": "\"We have a data lake. It's more of a data swamp, really.\"",
+      "extendedDescription": "Dump every piece of data we have into a cloud storage bucket and call it a 'data lake.' Hire a team of data engineers to build pipelines that transform data from formats nobody understands into formats nobody else understands. In two years, we'll have petabytes of data and no one who knows what any of it means. The 'insights' will somehow always confirm what leadership already believed.",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 10}, {"meter": "Governance", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 0}, {"meter": "Runway", "delta": -15}],
+        "bad": [{"meter": "Governance", "delta": -20}, {"meter": "Runway", "delta": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_EX_PLATFORM",
+      "title": "Employee Experience Platform",
+      "description": "Deploy a new platform to 'enhance the employee journey.'",
+      "flavorText": "\"It's like a social network, but mandatory and nobody wants to use it.\"",
+      "extendedDescription": "Replace the 15 different HR systems nobody understands with 1 new HR system nobody will understand. Employees will have a 'personalized dashboard' showing their 'career journey' and 'growth opportunities' (there are none). The system will send automated birthday messages that feel somehow lonelier than no message at all. HR will call it a massive success based on login metrics they don't mention are mandatory.",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 15}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -10}],
+        "bad": [{"meter": "Morale", "delta": -10}, {"meter": "Runway", "delta": -15}, {"meter": "Delivery", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_DEI",
+      "title": "Diversity & Inclusion Task Force",
+      "description": "Launch a comprehensive D&I program with training and metrics.",
+      "flavorText": "\"We put a woman on the poster. Problem solved.\"",
+      "extendedDescription": "Form a committee to address our diversity numbers without actually changing anything about how we hire, promote, or pay people. Everyone will complete unconscious bias training that makes them very aware of their biases but doesn't actually change behavior. We'll celebrate cultural heritage months with themed cafeteria menus. Leadership will remain suspiciously homogeneous but will now use phrases like 'allyship' in town halls.",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 15}, {"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Governance", "delta": 5}],
+        "bad": [{"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_PERF_MGMT",
+      "title": "Performance Management Overhaul",
+      "description": "Replace annual reviews with 'continuous feedback culture.'",
+      "flavorText": "\"We eliminated ratings. Now nobody knows where they stand.\"",
+      "extendedDescription": "Abolish the performance rating system that everyone hated and replace it with a different system everyone will hate. Managers will be asked to have 'continuous conversations' instead of annual reviews, which means nobody has any conversations at all. The bonus pool will still be distributed the same way, but now it's 'not tied to ratings' which makes it feel even more arbitrary. HR will survey everyone about the new system, get terrible feedback, and declare it a success.",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 10}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Morale", "delta": 0}, {"meter": "Alignment", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_CUSTOMER_CENTRIC",
+      "title": "Customer Centricity Initiative",
+      "description": "Reorganize the entire company around the customer.",
+      "flavorText": "\"We put the customer at the center of everything, except decisions.\"",
+      "extendedDescription": "Create journey maps. Persona workshops. Voice of Customer programs. Customer Advisory Boards that meet quarterly for catered lunches. We'll put the customer at the center of our PowerPoint slides and org charts. When customers actually ask for things, we'll explain why our roadmap is already set. But we'll do it in a very customer-centric way, with empathy and a survey asking how we did.",
+      "category": "Corporate",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_INNOVATION_LAB",
+      "title": "Innovation Lab Launch",
+      "description": "Open a trendy innovation space to 'disrupt ourselves.'",
+      "flavorText": "\"It's like a startup, except with more PowerPoints and less equity.\"",
+      "extendedDescription": "Rent a hip space in a cool neighborhood. Fill it with whiteboards, exposed brick, and people wearing jeans. They'll run 'design sprints' and build prototypes that will never survive contact with Legal, Compliance, or IT Security. The main business will view them with suspicion and refuse to implement any of their ideas. After 2 years, the lab will be quietly 'integrated back into the core business' and everyone will update their LinkedIn.",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Morale", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -10}],
+        "bad": [{"meter": "Runway", "delta": -15}, {"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_SOURCING",
+      "title": "Strategic Sourcing Initiative",
+      "description": "Renegotiate all vendor contracts and 'optimize' the supply chain.",
+      "flavorText": "\"We saved $50M by switching to vendors who are slightly worse.\"",
+      "extendedDescription": "Squeeze every vendor until they either cut corners or go bankrupt. Consolidate to fewer suppliers for 'efficiency,' creating single points of failure. Offshore everything that can be offshored. The finance team will celebrate the savings while ignoring that quality has plummeted and lead times have tripled. When something inevitably breaks, we'll blame the vendor and switch to a new one. Repeat annually.",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 20}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"meter": "Runway", "delta": 10}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"meter": "Runway", "delta": 5}, {"meter": "Delivery", "delta": -15}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_ZERO_TRUST",
+      "title": "Zero Trust Security Architecture",
+      "description": "Implement a zero-trust security model across the enterprise.",
+      "flavorText": "\"We don't trust anyone. Including ourselves.\"",
+      "extendedDescription": "Require authentication for everything. Re-authenticate constantly. Add MFA to MFA. Every login will require 3 apps, a hardware token, a blood sample, and a sincere apology for existing. Productivity will plummet as employees spend 40% of their day logging into things. When the CEO complains that she can't access her email, she'll get an exemption. Everyone will continue using the same passwords they've had since 2015.",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 20}, {"meter": "Delivery", "delta": -5}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_ESG",
+      "title": "Sustainability Transformation",
+      "description": "Launch comprehensive ESG initiatives and carbon neutrality goals.",
+      "flavorText": "\"We bought carbon offsets. Somewhere a tree exists, probably.\"",
+      "extendedDescription": "Announce ambitious carbon neutrality goals for 2050, a date conveniently after everyone currently in leadership has retired. Hire a Chief Sustainability Officer. Publish a glossy report with photos of windmills and diverse employees near trees. Switch to paper straws in the cafeteria while ignoring that our main product literally destroys the environment. But the ESG score looks great, and that's what matters to investors.",
+      "category": "Corporate",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 1,
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 15}, {"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": -10}, {"meter": "Morale", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_PROCESS",
+      "title": "Process Excellence Program",
+      "description": "Map, optimize, and standardize all business processes.",
+      "flavorText": "\"We documented 5,000 processes. Nobody reads any of them.\"",
+      "extendedDescription": "Hire Lean Six Sigma Black Belts to document every process in the company. Create swim lane diagrams that require a projector and squinting to read. Discover that most actual work happens through workarounds that bypass official processes entirely. Standardize everything, eliminating the workarounds that actually worked. Productivity drops 30% while process compliance reaches 95%. Mission accomplished.",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}, {"meter": "Alignment", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_SALES_BLITZ",
+      "title": "Q-End Sales Blitz",
+      "description": "Push the sales team to close every deal before quarter end.",
+      "flavorText": "\"Sleep is for Q1. Close everything now.\"",
+      "category": "Revenue",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 1,
+      "extendedDescription": "Demand that every salesperson work nights and weekends to hit quota. Offer SPIFs, threaten PIPs, and dangle President's Club. Customers will receive 47 'final offer' emails. Deals that should close next quarter will be pulled forward with massive discounts, creating a crater in Q+1. The sales VP will ring a bell loudly. Morale will crater. But the board only sees this quarter's number.",
+      "outcomes": {
+        "good": [{"profit": 45}, {"meter": "Morale", "delta": -5}],
+        "expected": [{"profit": 25}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_COST_CUTTING",
+      "title": "Strategic Cost Reduction",
+      "description": "Implement aggressive cost-cutting measures across the organization.",
+      "flavorText": "\"We're not 'cutting.' We're 'optimizing our cost structure.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "extendedDescription": "Cancel the holiday party. Freeze travel. Reduce the office snack budget by 80%. Eliminate 'redundancies' (people). Remaining employees will do 3 jobs for the same pay. Quality will suffer, but that's next quarter's problem. The CFO will present savings projections that assume zero productivity loss. They're always wrong, but the board loves the slides.",
+      "outcomes": {
+        "good": [{"profit": 40}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 30}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}],
+        "bad": [{"profit": 15}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -20}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_PRICE_INCREASE",
+      "title": "Strategic Pricing Adjustment",
+      "description": "Raise prices across the board. For 'value alignment.'",
+      "flavorText": "\"It's not a price hike. It's 'value-based pricing.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Raise prices 15% and see what happens. Marketing will craft a narrative about 'enhanced value' and 'market positioning.' Customer Success will handle the angry calls. Some customers will leave. The ones who stay won't forgive us. But analysts love 'pricing power' and the stock might tick up. If customers revolt, blame inflation.",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 20}, {"meter": "Alignment", "delta": -10}],
+        "bad": [{"profit": -10}, {"meter": "Alignment", "delta": -25}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_LAYOFFS",
+      "title": "Workforce Optimization",
+      "description": "Reduce headcount to improve profitability immediately.",
+      "flavorText": "\"We're not firing people. We're 'building a leaner organization.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 5,
+      "extendedDescription": "The nuclear option for hitting quarterly numbers. HR will prepare 'impacted employee' lists. Managers will have 'difficult conversations.' Survivors will update their LinkedIn profiles and do 2x the work. Institutional knowledge walks out the door. But Wall Street loves efficiency! The CEO will express 'heartfelt' sympathy while cashing their bonus. Evil, but effective.",
+      "outcomes": {
+        "good": [{"profit": 50}, {"meter": "Runway", "delta": 15}, {"meter": "Morale", "delta": -10}],
+        "expected": [{"profit": 35}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -15}],
+        "bad": [{"profit": 20}, {"meter": "Morale", "delta": -35}, {"meter": "Delivery", "delta": -25}, {"meter": "Governance", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_MARKET_EXPANSION",
+      "title": "New Market Expansion",
+      "description": "Enter a new market segment or geographic region.",
+      "flavorText": "\"We're big in Delaware. Time to conquer... Rhode Island.\"",
+      "category": "Revenue",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "extendedDescription": "Announce bold expansion plans to a market we don't understand. Hire a local team who will quit within 6 months when they realize we have no idea what we're doing. Spend heavily on localization that still gets the language wrong. If it works, it's 'strategic vision.' If it fails, we 'learned valuable lessons' and write off the investment.",
+      "outcomes": {
+        "good": [{"profit": 40}, {"meter": "Delivery", "delta": 10}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"profit": 15}, {"meter": "Runway", "delta": -15}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": -20}, {"meter": "Runway", "delta": -25}, {"meter": "Alignment", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_ACQUISITION",
+      "title": "Acquisition Synergy Capture",
+      "description": "Finally integrate that company we bought 18 months ago.",
+      "flavorText": "\"The synergies are definitely coming. Any quarter now.\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 2,
+      "extendedDescription": "We paid $500M for a company and promised $100M in 'synergies' that haven't materialized. Time to force-merge the teams, eliminate duplicates, and pray the integration doesn't crater both businesses. Their best people will leave for competitors. Their culture will clash with ours. But if we can just capture 10% of those promised synergies, the board might forget we overpaid.",
+      "outcomes": {
+        "good": [{"profit": 55}, {"meter": "Governance", "delta": 10}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 20}, {"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -10}, {"meter": "Delivery", "delta": -10}],
+        "bad": [{"profit": -15}, {"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -20}, {"meter": "Governance", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_SUBSCRIPTION",
+      "title": "Subscription Revenue Pivot",
+      "description": "Convert one-time purchases to recurring subscription revenue.",
+      "flavorText": "\"Customers love paying forever for things they used to own.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Turn your product into a 'service' by making customers pay monthly for what they used to buy once. Wall Street loves recurring revenue! Customers will complain loudly on social media. Your subreddit will be on fire. But analysts will upgrade the stock because 'predictable revenue streams.' Adobe did it. Microsoft did it. Your turn.",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Runway", "delta": 15}],
+        "expected": [{"profit": 20}, {"meter": "Alignment", "delta": -15}],
+        "bad": [{"profit": -5}, {"meter": "Alignment", "delta": -25}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_PREMIUM_TIER",
+      "title": "Premium Enterprise Tier",
+      "description": "Launch an expensive new tier with features nobody asked for.",
+      "flavorText": "\"We're not increasing prices. We're offering 'enhanced value.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Create a 'Premium' tier that's just the old product with a SSO checkbox and a dedicated Slack channel. Charge 3x more. Fortune 500 procurement departments don't blink at enterprise pricing - they expect it. The sales team will love their new commission structure. Product will hate maintaining two almost-identical versions.",
+      "outcomes": {
+        "good": [{"profit": 30}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"profit": 18}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_OFFSHORE",
+      "title": "Global Talent Optimization",
+      "description": "Move work to lower-cost regions for 'around-the-clock productivity.'",
+      "flavorText": "\"It's not outsourcing. It's 'accessing global talent pools.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 3,
+      "extendedDescription": "Replace $150K San Francisco engineers with $30K Bangalore contractors. On paper, 5x cost savings! In reality, the timezone differences mean everything takes 3x longer. Institutional knowledge evaporates. The contractors are excellent but can't read minds about undocumented systems. Your remaining US employees will spend all day on calls explaining context.",
+      "outcomes": {
+        "good": [{"profit": 40}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 25}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}],
+        "bad": [{"profit": 10}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -20}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_VENDOR_CONSOLIDATION",
+      "title": "Vendor Consolidation Program",
+      "description": "Ruthlessly renegotiate every vendor contract for maximum savings.",
+      "flavorText": "\"We're not squeezing them. We're 'optimizing partnerships.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 1,
+      "extendedDescription": "Call every vendor and demand 20% off or we walk. Some will cave. Some will call our bluff. The procurement team will feel powerful. The teams who depend on those vendors will scramble when service levels drop. 'Preferred partner' status means nothing when you're squeezing them dry. But the quarterly savings look great in the board deck.",
+      "outcomes": {
+        "good": [{"profit": 30}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"profit": 18}, {"meter": "Delivery", "delta": -5}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Delivery", "delta": -15}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_CHANNEL_PARTNER",
+      "title": "Channel Partner Expansion",
+      "description": "Let other companies sell our product for a cut of the revenue.",
+      "flavorText": "\"Why hire salespeople when partners can do it for 30% margin?\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 0,
+      "extendedDescription": "Build a partner program where other companies sell for you. They take 30% but you scale without hiring. The good partners will demand exclusivity. The bad partners will make promises you can't keep. Customer experience becomes 'variable.' But the revenue shows up without headcount, and that's beautiful on the P&L.",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Runway", "delta": 5}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"profit": 15}, {"meter": "Alignment", "delta": -5}],
+        "bad": [{"profit": -10}, {"meter": "Alignment", "delta": -20}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_CONTRACT_RENEGO",
+      "title": "Contract Renegotiation Wave",
+      "description": "Proactively reach out to customers expiring in 6 months with 'special offers.'",
+      "flavorText": "\"Sign now and lock in only a 20% increase instead of 40%.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 0,
+      "extendedDescription": "Send the renewal team door-to-door (virtually) to lock customers into long-term contracts before they realize they could switch. Early renewal discounts that are somehow more expensive than the original price. Customers will feel slightly trapped but continue paying. The CFO calls it 'reducing churn risk.'",
+      "outcomes": {
+        "good": [{"profit": 38}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 22}, {"meter": "Alignment", "delta": -8}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_FEATURE_GATE",
+      "title": "Strategic Feature Gating",
+      "description": "Move existing features behind premium paywall. Innovation!",
+      "flavorText": "\"We're not removing features. We're creating 'opportunities to upgrade.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "extendedDescription": "Take features customers have been using for years and put them behind a paywall. Marketing will call it 'product tiering.' Reddit will call it something unprintable. Engineers will question their life choices. But the finance team will present beautiful upgrade conversion charts. Some customers will pay. Most will complain. A few will leave. Net positive.",
+      "outcomes": {
+        "good": [{"profit": 32}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 18}, {"meter": "Alignment", "delta": -12}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"profit": 0}, {"meter": "Alignment", "delta": -25}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_CONSULTING",
+      "title": "Professional Services Expansion",
+      "description": "Launch a consulting division to monetize our expertise.",
+      "flavorText": "\"We'll charge $500/hour to explain our own product.\"",
+      "category": "Revenue",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Hire consultants to help customers use our confusing product. Charge premium rates for implementation that should be simple. The consulting team will become indispensable because the product never gets better. Engineering will resent that consulting makes more money. It's the Microsoft model: confuse, monetize, repeat.",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"profit": 20}, {"meter": "Delivery", "delta": -8}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Delivery", "delta": -18}, {"meter": "Morale", "delta": -12}]
+      }
+    },
+    {
+      "cardId": "PROJ_DATA_MONETIZE",
+      "title": "Data Monetization Initiative",
+      "description": "Sell anonymized customer usage data to third parties.",
+      "flavorText": "\"It's anonymized. Mostly. Probably. Legal said it's fine.\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 3,
+      "extendedDescription": "We have petabytes of customer data. Why let it sit idle? Sell 'aggregated insights' to advertisers, hedge funds, and companies we've never heard of. The privacy policy technically allows it if you squint. GDPR compliance is 'in progress.' When customers find out, we'll call it 'market research partnerships.' Pure profit margin.",
+      "outcomes": {
+        "good": [{"profit": 45}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 28}, {"meter": "Governance", "delta": -10}],
+        "bad": [{"profit": 8}, {"meter": "Governance", "delta": -25}, {"meter": "Alignment", "delta": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_MAINTENANCE_FEES",
+      "title": "Support & Maintenance Restructuring",
+      "description": "Charge for support that used to be included.",
+      "flavorText": "\"Basic support is still free. Basic means email-only with 5-day SLA.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Introduce tiered support: Bronze (email, maybe we respond), Silver (phone, but hold times are rough), Gold (an actual human who cares). Existing customers get 'grandfathered' into Bronze. Want the support you used to get? That's Platinum now. The support team will be demoralized. The customers will be frustrated. The revenue will be fantastic.",
+      "outcomes": {
+        "good": [{"profit": 28}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 18}, {"meter": "Alignment", "delta": -10}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -22}, {"meter": "Governance", "delta": -8}]
+      }
+    },
+    {
+      "cardId": "PROJ_UPSELL",
+      "title": "Account Expansion Campaign",
+      "description": "Aggressively upsell existing customers on features they didn't know existed.",
+      "flavorText": "\"They're already paying. Let's see how much more we can extract.\"",
+      "category": "Revenue",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "extendedDescription": "Deploy the Customer Success team as a sales force in disguise. Every 'check-in call' becomes a pitch. Quarterly business reviews are really 'why you need the enterprise tier' presentations. Some customers will appreciate learning about features. Most will feel ambushed. But expansion revenue is the best revenue - no acquisition cost!",
+      "outcomes": {
+        "good": [{"profit": 42}, {"meter": "Morale", "delta": 5}],
+        "expected": [{"profit": 25}, {"meter": "Alignment", "delta": -8}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -18}, {"meter": "Morale", "delta": -8}]
+      }
+    },
+    {
+      "cardId": "PROJ_METAVERSE",
+      "title": "Metaverse Strategy Initiative",
+      "description": "Establish corporate presence in virtual worlds nobody uses.",
+      "flavorText": "\"Our virtual headquarters has zero visitors. But what a headquarters!\"",
+      "category": "Corporate",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 0,
+      "extendedDescription": "Buy virtual land for $2M. Build a digital corporate campus complete with conference rooms no one enters. Force employees to attend 'metaverse town halls' where their avatars stare into the void. The CEO will be very excited to show the board his virtual office. The stock might bump 2% when we announce it. Worth it.",
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 15}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"meter": "Runway", "delta": 5}, {"meter": "Morale", "delta": -10}],
+        "bad": [{"meter": "Runway", "delta": -15}, {"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_LOWCODE",
+      "title": "Low-Code Citizen Development",
+      "description": "Let non-engineers build apps. What could go wrong?",
+      "flavorText": "\"Karen from Accounting built a customer database. It crashed twice today.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Deploy a no-code platform and tell business users to build their own solutions. IT will lose visibility into shadow apps multiplying like tribbles. Security will have concerns. Compliance will have concerns. But velocity! Empowerment! When something breaks catastrophically, we'll blame 'governance gaps' and buy another platform.",
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 10}, {"meter": "Morale", "delta": 10}, {"meter": "Governance", "delta": -5}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Governance", "delta": -10}],
+        "bad": [{"meter": "Delivery", "delta": -10}, {"meter": "Governance", "delta": -20}, {"meter": "Morale", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_GENAI_POLICY",
+      "title": "Generative AI Guidelines",
+      "description": "Create a 47-page policy on acceptable AI usage that no one reads.",
+      "flavorText": "\"You can use ChatGPT but you can't tell it anything. Very helpful.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Legal and IT will spend 6 months crafting comprehensive AI usage guidelines. The policy will be so restrictive that compliant AI usage is essentially impossible. Employees will ignore it entirely and use Claude on their phones. When an incident occurs, we'll update the policy to 48 pages.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 5}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": -5}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_HYBRID",
+      "title": "Hybrid Work Framework",
+      "description": "Define which days employees must be in office. Change it quarterly.",
+      "flavorText": "\"Tuesdays and Thursdays are mandatory. No wait, Wednesday is now mandatory.\"",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 1,
+      "extendedDescription": "Form a committee to determine the perfect in-office schedule. Survey employees, ignore the results, then mandate three days in office because 'collaboration.' Middle managers will enforce badge swipes. Employees will badge in, attend one meeting, then leave. Measure presence, not productivity. The future of work!",
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 15}, {"meter": "Delivery", "delta": 5}],
+        "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -10}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_MICROSERVICES",
+      "title": "Microservices Architecture",
+      "description": "Break our working monolith into 200 tiny services.",
+      "flavorText": "\"The monolith worked. But microservices are what cool companies do.\"",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "extendedDescription": "Take the monolith that's worked for 10 years and shatter it into hundreds of services that now need a PhD in Kubernetes to deploy. Each team owns 12 services they don't understand. Distributed tracing becomes your new religion. Production debugging becomes archaeology. But the architecture diagram looks amazing.",
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 20}, {"meter": "Governance", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Runway", "delta": -15}, {"meter": "Morale", "delta": -10}],
+        "bad": [{"meter": "Delivery", "delta": -20}, {"meter": "Runway", "delta": -25}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_OFFSITE",
+      "title": "Executive Leadership Offsite",
+      "description": "Send executives to a resort to 'align on strategy.'",
+      "flavorText": "\"We spent $500K on a Napa retreat. The strategy is still unclear.\"",
+      "category": "Corporate",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 1,
+      "extendedDescription": "Fly the C-suite to somewhere beautiful where they'll do trust falls and create vision statements that mean nothing. The rest of the company will see Instagram posts of executives doing yoga while they work through lunch. At least they'll come back with a new strategic pillar that contradicts the last three.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 20}],
+        "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_VMO",
+      "title": "Vendor Management Office",
+      "description": "Add a layer of bureaucracy between teams and their tools.",
+      "flavorText": "\"You need approval to buy post-it notes. It takes 6 weeks.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Create a team whose job is to review every vendor purchase. They'll require 8 approvals for a $500 software license. Procurement cycles will stretch to 3 months. Teams will find creative workarounds using personal credit cards. But we'll definitely reduce 'vendor sprawl' by approximately zero percent.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 20}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Delivery", "delta": -20}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_WELLNESS",
+      "title": "Employee Wellness Initiative",
+      "description": "Launch meditation apps and yoga classes to reduce burnout from overwork.",
+      "flavorText": "\"We can't reduce your workload, but here's a mindfulness webinar.\"",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "extendedDescription": "Address the symptoms of workplace stress without touching the causes. Offer meditation subscriptions to employees working 60-hour weeks. Install nap pods that no one has time to use. Launch a step-counting challenge while scheduling meetings during lunch. Wellness theater at its finest.",
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 15}, {"meter": "Delivery", "delta": 5}],
+        "expected": [{"meter": "Morale", "delta": 8}, {"meter": "Runway", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_TECHDEBT",
+      "title": "Tech Debt Paydown Sprint",
+      "description": "Dedicate one sprint to fixing the code everyone's afraid to touch.",
+      "flavorText": "\"We scheduled 2 weeks for tech debt. We need 2 years.\"",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "extendedDescription": "Allow engineers two weeks to fix the horrors they've been complaining about for years. They'll triage ruthlessly, fix 2% of the problems, and discover 50 new ones. The codebase will be marginally less terrifying. Leadership will call it a success and cancel the next scheduled tech debt sprint for 'critical business priorities.'",
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 20}, {"meter": "Morale", "delta": 10}, {"meter": "Runway", "delta": -5}],
+        "expected": [{"meter": "Delivery", "delta": 10}, {"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -10}],
+        "bad": [{"meter": "Delivery", "delta": 0}, {"meter": "Morale", "delta": -10}, {"meter": "Runway", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_REORG",
+      "title": "Organizational Restructure",
+      "description": "Shuffle the org chart and call it 'strategic alignment.'",
+      "flavorText": "\"Your new manager is someone you've never met. Good luck!\"",
+      "category": "Corporate",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 2,
+      "extendedDescription": "Announce a major reorg with 48 hours notice. Everyone's manager changes. Teams are split and merged seemingly at random. The org chart now looks like a Jackson Pollock painting. Productivity halts for 3 months while everyone figures out their new roles. Best people update LinkedIn and leave.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}],
+        "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_REBRAND",
+      "title": "Corporate Brand Refresh",
+      "description": "Spend $5M on a new logo that looks like the old one.",
+      "flavorText": "\"We changed the font. Revolutionary.\"",
+      "category": "Corporate",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Hire a branding agency to spend 6 months creating a new logo that's slightly more minimal. Pay them $3M. Spend another $5M updating all the collateral, signage, and swag. Customers won't notice. Employees will hate the new colors. But the brand guidelines PDF will be absolutely gorgeous.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Runway", "delta": -10}],
+        "bad": [{"meter": "Alignment", "delta": -15}, {"meter": "Morale", "delta": -10}, {"meter": "Runway", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_COMPLIANCE_TRAIN",
+      "title": "Mandatory Compliance Training",
+      "description": "Make everyone complete 40 hours of click-through training.",
+      "flavorText": "\"Click. Click. Click. Yes I promise not to insider trade. Click.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Annual training season arrives. Every employee spends a week clicking through modules on harassment, security, ethics, and fire safety. They'll click 'Next' without reading, fail the quiz, and retake it until they pass. Compliance will have documentation. Actual compliance is anyone's guess.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 15}, {"meter": "Morale", "delta": -5}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_AUDIT",
+      "title": "Internal Audit Initiative",
+      "description": "Have auditors review everything and produce findings nobody reads.",
+      "flavorText": "\"We have 847 audit findings. We've addressed 12.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Unleash internal audit on unsuspecting departments. They'll find problems everyone already knows about and document them extensively. Management will promise to remediate. Nothing will change until external auditors arrive and find the same issues. Then there will be panic. Circle of life.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 20}, {"meter": "Delivery", "delta": -5}],
+        "expected": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": -10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Delivery", "delta": -15}, {"meter": "Morale", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_NPS",
+      "title": "Net Promoter Score Program",
+      "description": "Survey customers constantly and obsess over a single number.",
+      "flavorText": "\"Our NPS is 32. Is that good? Bad? Nobody knows but we're measuring it.\"",
+      "category": "Action",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Launch an NPS program that surveys customers after every interaction. The score becomes everyone's OKR. Teams game the system by surveying only happy customers. Support reps beg for 10s. The number goes up while actual satisfaction stays flat. But the board loves simple metrics.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Morale", "delta": 5}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_LEARNING",
+      "title": "Learning & Development Platform",
+      "description": "Buy a learning platform with 10,000 courses nobody takes.",
+      "flavorText": "\"We have unlimited LinkedIn Learning access. Completion rate: 3%.\"",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "extendedDescription": "Deploy an enterprise learning platform with thousands of courses. Announce it as a 'growth opportunity.' Nobody has time to actually take courses because they're too busy working. HR will send monthly emails about utilization. Managers will put 'complete 5 courses' in performance goals. Nobody will.",
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 10}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Runway", "delta": -5}],
+        "bad": [{"meter": "Morale", "delta": -5}, {"meter": "Runway", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_HIRING_FREEZE",
+      "title": "Strategic Hiring Pause",
+      "description": "Stop all hiring while pretending it's temporary.",
+      "flavorText": "\"We're not freezing hiring. We're being 'thoughtful about growth.'\"",
+      "category": "Action",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Announce a 'temporary' hiring freeze that will last 18 months. Teams that were already understaffed will now be critically understaffed. Backfills require CEO approval. Exception requests pile up. Best employees leave for companies that are hiring. But the savings look great on the quarterly report.",
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 15}],
+        "expected": [{"meter": "Runway", "delta": 10}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -10}],
+        "bad": [{"meter": "Runway", "delta": 5}, {"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -20}]
+      }
+    },
+    {
+      "cardId": "PROJ_OUTSOURCE_STUDY",
+      "title": "Outsourcing Feasibility Study",
+      "description": "Hire consultants to determine what work we can offshore.",
+      "flavorText": "\"The consultants recommend we outsource everything except consultants.\"",
+      "category": "Corporate",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 2,
+      "extendedDescription": "Commission a study on which functions could be outsourced. Word will leak. Everyone will assume their job is at risk. The best people will find new jobs preemptively. The study will conclude that outsourcing would save money if you ignore all the hidden costs. Leadership will proudly announce a 'balanced approach.'",
+      "outcomes": {
+        "good": [{"meter": "Runway", "delta": 10}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"meter": "Runway", "delta": 5}, {"meter": "Morale", "delta": -15}],
+        "bad": [{"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_KNOWLEDGE_MGMT",
+      "title": "Knowledge Management System",
+      "description": "Create a wiki that will be outdated within 6 months.",
+      "flavorText": "\"The documentation is comprehensive. It's also from 2019.\"",
+      "category": "Action",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 0,
+      "extendedDescription": "Deploy Confluence, Notion, or whatever knowledge tool is trendy. Mandate that all teams document everything. For 3 months, documentation flourishes. Then everyone gets busy and stops updating. New employees will find beautiful but obsolete docs. Tribal knowledge wins again.",
+      "outcomes": {
+        "good": [{"meter": "Delivery", "delta": 15}, {"meter": "Governance", "delta": 10}],
+        "expected": [{"meter": "Delivery", "delta": 5}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Delivery", "delta": -5}, {"meter": "Morale", "delta": -10}, {"meter": "Governance", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_INCIDENT_MGMT",
+      "title": "Incident Management Overhaul",
+      "description": "Create elaborate processes for when things break.",
+      "flavorText": "\"We have a 47-step incident response procedure. Step 1: Panic.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Build a comprehensive incident management system. War rooms, severity levels, communication templates, postmortems. Engineers will fill out forms while servers burn. Postmortems will identify root causes that are never addressed. But the audit trail will be impeccable.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": 0}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_MENTORSHIP",
+      "title": "Formal Mentorship Program",
+      "description": "Match employees with mentors who are too busy to mentor.",
+      "flavorText": "\"Your mentor cancelled again. Something about a 'fire drill.'\"",
+      "category": "Action",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 0,
+      "extendedDescription": "Launch a formal mentorship program matching junior employees with senior leaders. The algorithm will make incomprehensible pairings. Meetings will be cancelled due to 'urgent priorities.' When it works, it's transformative. When it doesn't, mentees feel forgotten. Success rate: 20%.",
+      "outcomes": {
+        "good": [{"meter": "Morale", "delta": 15}, {"meter": "Delivery", "delta": 5}],
+        "expected": [{"meter": "Morale", "delta": 5}, {"meter": "Delivery", "delta": 0}],
+        "bad": [{"meter": "Morale", "delta": -10}, {"meter": "Alignment", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_CHANGE_MGMT",
+      "title": "Change Management Framework",
+      "description": "Create processes to manage the resistance to all your other projects.",
+      "flavorText": "\"We're implementing change management. The irony is not lost on us.\"",
+      "category": "Action",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Hire change management consultants to ease adoption of initiatives. They'll produce stakeholder maps, communication plans, and resistance assessments. Employees will be 'change fatigued' before anything changes. The consultants will recommend more change management. Recursive bureaucracy achieved.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -5}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_RISK_ASSESS",
+      "title": "Enterprise Risk Assessment",
+      "description": "Document all the risks we're ignoring in a comprehensive spreadsheet.",
+      "flavorText": "\"We've identified 200 risks. We're mitigating 3.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Conduct a comprehensive risk assessment with heat maps and probability matrices. Identify existential risks that leadership will dismiss as 'unlikely.' Document everything meticulously. When a risk materializes, everyone will remember the assessment that warned about it. Nobody will have done anything.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 20}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"meter": "Governance", "delta": 10}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": -10}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_SUCCESSION",
+      "title": "Succession Planning Initiative",
+      "description": "Identify replacements for leaders who will never leave.",
+      "flavorText": "\"You're the backup for someone who's been here 30 years. Enjoy waiting.\"",
+      "category": "Action",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Create succession plans for key roles. High potentials will be identified and told they're 'on the list.' They'll wait years with no actual opportunity. When roles open, external candidates will be hired. The identified successors will leave. The list will be updated with their replacements.",
+      "outcomes": {
+        "good": [{"meter": "Governance", "delta": 10}, {"meter": "Alignment", "delta": 10}, {"meter": "Morale", "delta": 5}],
+        "expected": [{"meter": "Governance", "delta": 5}, {"meter": "Morale", "delta": 0}],
+        "bad": [{"meter": "Morale", "delta": -15}, {"meter": "Alignment", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_CAB",
+      "title": "Customer Advisory Board",
+      "description": "Gather top customers quarterly to tell us things we'll ignore.",
+      "flavorText": "\"Our advisory board has great ideas. We've implemented none of them.\"",
+      "category": "Action",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Invite top customers to exclusive quarterly sessions at nice venues. They'll share valuable feedback and product ideas. Sales will use it as a relationship-building exercise. Product will attend, take notes, and continue with their existing roadmap. Customers will feel heard but unsatisfied. Repeat quarterly.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 20}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"meter": "Alignment", "delta": 10}, {"meter": "Runway", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_OKR",
+      "title": "OKR Framework Rollout",
+      "description": "Implement Objectives and Key Results. Measure everything, change nothing.",
+      "flavorText": "\"Our key result is improving our key results. Very meta.\"",
+      "category": "Action",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Deploy OKRs company-wide because Google uses them. Teams will spend weeks wordsmithing objectives. Key results will be either unmeasurable aspirations or things that would happen anyway. Quarterly OKR reviews will be theater. Everyone will achieve 70% by definition. Intel is somehow blamed.",
+      "outcomes": {
+        "good": [{"meter": "Alignment", "delta": 15}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"meter": "Alignment", "delta": 5}, {"meter": "Morale", "delta": -5}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_EMERGENCY_CUTS",
+      "title": "Emergency Budget Reduction",
+      "description": "Slash budgets mid-year with immediate effect.",
+      "flavorText": "\"All spending frozen effective yesterday. Good luck finishing projects.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "extendedDescription": "Announce emergency cost cuts effective immediately. Cancel vendor contracts mid-stream. Freeze all travel and discretionary spend. Teams scramble to figure out how to finish projects with no budget. The savings are real but so is the chaos. Next quarter's numbers will be worse because of delayed projects.",
+      "outcomes": {
+        "good": [{"profit": 48}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 32}, {"meter": "Morale", "delta": -20}, {"meter": "Delivery", "delta": -15}],
+        "bad": [{"profit": 15}, {"meter": "Morale", "delta": -30}, {"meter": "Delivery", "delta": -25}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_ASSET_SALE",
+      "title": "Non-Core Asset Divestiture",
+      "description": "Sell off business units that don't fit the 'strategic focus.'",
+      "flavorText": "\"We're selling the profitable division to focus on our core unprofitable one.\"",
+      "category": "Revenue",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 2,
+      "extendedDescription": "Sell a business unit to hit quarterly numbers. Employees in that unit will be 'transitioned' to the buyer. The rest of the company will wonder if they're next. Private equity loves buying these cast-offs. We'll call it 'strategic portfolio optimization.' The one-time gain looks beautiful on the P&L.",
+      "outcomes": {
+        "good": [{"profit": 65}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"profit": 45}, {"meter": "Morale", "delta": -10}],
+        "bad": [{"profit": 25}, {"meter": "Morale", "delta": -20}, {"meter": "Alignment", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_PAYMENT_TERMS",
+      "title": "Payment Terms Renegotiation",
+      "description": "Demand faster payment from customers, extend terms to vendors.",
+      "flavorText": "\"Pay us in 15 days. We'll pay you in 90. It's called cash flow optimization.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Squeeze the supply chain from both ends. Demand customers pay faster with early payment discounts that are actually penalties for late payment. Extend vendor terms to 90 days. Our cash position improves dramatically. Vendor relationships deteriorate. Customers grumble. Cash is king.",
+      "outcomes": {
+        "good": [{"profit": 32}, {"meter": "Runway", "delta": 15}],
+        "expected": [{"profit": 20}, {"meter": "Alignment", "delta": -10}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -20}, {"meter": "Delivery", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_SUNSET",
+      "title": "Legacy Product Sunset",
+      "description": "Kill old products to force customers onto new ones.",
+      "flavorText": "\"We're not killing your favorite product. We're 'sunsetting' it.\"",
+      "category": "Revenue",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 1,
+      "extendedDescription": "End-of-life the legacy product that 40% of customers still use. They'll be 'migrated' to the new platform whether they want to or not. Engineering no longer has to maintain two codebases. Some customers will upgrade, some will leave, and support tickets will spike for 6 months. But the portfolio is now 'streamlined.'",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Delivery", "delta": 10}],
+        "expected": [{"profit": 22}, {"meter": "Alignment", "delta": -12}, {"meter": "Morale", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -25}, {"meter": "Morale", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_AUTOMATION",
+      "title": "Process Automation Initiative",
+      "description": "Replace manual processes with bots. And the people who did them.",
+      "flavorText": "\"The bot does the work of 12 people. 11 of them now work elsewhere.\"",
+      "category": "Revenue",
+      "meterAffinity": "Delivery",
+      "corporateIntensity": 3,
+      "extendedDescription": "Deploy RPA bots to automate repetitive tasks currently done by humans. The humans will be 'redeployed to higher-value work' (laid off). The bots will work 24/7 without complaints or benefits. When they break, nobody will understand how to fix them. But the cost savings are undeniable.",
+      "outcomes": {
+        "good": [{"profit": 52}, {"meter": "Delivery", "delta": 10}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"profit": 35}, {"meter": "Morale", "delta": -15}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": 18}, {"meter": "Morale", "delta": -25}, {"meter": "Delivery", "delta": -15}, {"meter": "Governance", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_DEFERRED",
+      "title": "Revenue Recognition Acceleration",
+      "description": "Find creative ways to recognize revenue sooner.",
+      "flavorText": "\"It's not fraud. It's 'aggressive accounting.' Very different.\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 3,
+      "extendedDescription": "Work with auditors to find ways to recognize revenue earlier. Bill-and-hold arrangements, percentage of completion adjustments, and other techniques that are 'within GAAP' if you squint. This quarter looks great. Future quarters will be missing revenue we already recognized. The CFO is confident it's fine.",
+      "outcomes": {
+        "good": [{"profit": 40}, {"meter": "Governance", "delta": -5}],
+        "expected": [{"profit": 28}, {"meter": "Governance", "delta": -15}],
+        "bad": [{"profit": 10}, {"meter": "Governance", "delta": -25}]
+      }
+    },
+    {
+      "cardId": "PROJ_INSURANCE",
+      "title": "Business Interruption Claim",
+      "description": "File insurance claims for everything remotely claimable.",
+      "flavorText": "\"Our insurance company is not returning our calls. Good sign?\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "After any incident, deploy the risk management team to maximize insurance recovery. Document everything extensively. Hire claims consultants who work on contingency. The insurer will fight every line item. The settlement will be less than hoped but more than expected. Pure profit margin if it works.",
+      "outcomes": {
+        "good": [{"profit": 50}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"profit": 25}, {"meter": "Governance", "delta": 0}],
+        "bad": [{"profit": 5}, {"meter": "Governance", "delta": -10}, {"meter": "Runway", "delta": -10}]
+      }
+    },
+    {
+      "cardId": "PROJ_BONUS_DEFER",
+      "title": "Incentive Compensation Restructure",
+      "description": "Defer bonuses and switch to 'long-term incentives.'",
+      "flavorText": "\"Your bonus is now a 4-year vesting grant. You're welcome for the retention.\"",
+      "category": "Revenue",
+      "meterAffinity": "Morale",
+      "corporateIntensity": 2,
+      "extendedDescription": "Restructure compensation to reduce cash bonuses in favor of equity that vests over 4 years. Frame it as 'long-term alignment.' Employees see through it immediately. The best ones leave for companies with real bonuses. The rest quietly update their resumes while waiting for grants to vest.",
+      "outcomes": {
+        "good": [{"profit": 38}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 25}, {"meter": "Morale", "delta": -18}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": 12}, {"meter": "Morale", "delta": -30}, {"meter": "Delivery", "delta": -15}]
+      }
+    },
+    {
+      "cardId": "PROJ_FREEMIUM",
+      "title": "Freemium Monetization Push",
+      "description": "Aggressively convert free users to paid plans.",
+      "flavorText": "\"Free users aren't customers. They're conversion opportunities.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Add more friction to the free tier. Limit features, add pop-ups, make the upgrade button bigger. Free users will either convert or leave—both outcomes the CFO considers wins. Power users will complain loudly on social media. Analysts will praise the improved unit economics.",
+      "outcomes": {
+        "good": [{"profit": 42}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 25}, {"meter": "Alignment", "delta": -10}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -22}, {"meter": "Morale", "delta": -8}]
+      }
+    },
+    {
+      "cardId": "PROJ_SAAS_PUSH",
+      "title": "SaaS Conversion Campaign",
+      "description": "Move on-premise customers to cloud subscriptions.",
+      "flavorText": "\"You loved owning software. You'll love renting it even more.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 1,
+      "extendedDescription": "Announce end-of-support for on-premise versions. Customers must migrate to SaaS or lose security updates. Some will pay 3x more annually for the privilege of not owning software. Others will flee to competitors. ARR goes up, customer sentiment goes down. Wall Street only sees the first metric.",
+      "outcomes": {
+        "good": [{"profit": 45}, {"meter": "Runway", "delta": 15}],
+        "expected": [{"profit": 28}, {"meter": "Alignment", "delta": -8}, {"meter": "Delivery", "delta": -5}],
+        "bad": [{"profit": 10}, {"meter": "Alignment", "delta": -18}, {"meter": "Delivery", "delta": -12}]
+      }
+    },
+    {
+      "cardId": "PROJ_LIQUIDATION",
+      "title": "Inventory Liquidation Event",
+      "description": "Dump obsolete inventory at steep discounts.",
+      "flavorText": "\"It's not a fire sale. It's a 'strategic inventory optimization event.'\"",
+      "category": "Revenue",
+      "meterAffinity": "Governance",
+      "corporateIntensity": 0,
+      "extendedDescription": "Clear out warehouses of products nobody wants at 70% off. Cash comes in, warehouse costs go down, and the write-off was already taken. Customers who paid full price will be annoyed. Channel partners will be furious. But the balance sheet looks cleaner and cash flow improves.",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Runway", "delta": 10}, {"meter": "Governance", "delta": 5}],
+        "expected": [{"profit": 20}, {"meter": "Alignment", "delta": -5}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -15}, {"meter": "Governance", "delta": -5}]
+      }
+    },
+    {
+      "cardId": "PROJ_REBATES",
+      "title": "Rebate Program Restructure",
+      "description": "Make rebates harder to claim while technically still offering them.",
+      "flavorText": "\"The rebate is available. Just fill out these 47 forms.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "extendedDescription": "Advertise attractive rebates while making redemption nearly impossible. Require original receipts, UPC codes, specific forms, and submission within 14 days. Redemption rates drop from 80% to 20%. Marketing gets the sales bump, finance keeps most of the rebate budget. Customers rarely notice until it's too late.",
+      "outcomes": {
+        "good": [{"profit": 30}, {"meter": "Runway", "delta": 5}],
+        "expected": [{"profit": 18}, {"meter": "Alignment", "delta": -12}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -22}]
+      }
+    },
+    {
+      "cardId": "PROJ_CROSSSELL",
+      "title": "Cross-Sell Revenue Targets",
+      "description": "Force every customer-facing team to push additional products.",
+      "flavorText": "\"You called about a bug? Have you considered our premium support tier?\"",
+      "category": "Revenue",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 1,
+      "extendedDescription": "Give every customer-facing team cross-sell quotas. Support reps must pitch upgrades during help calls. Account managers have bundle targets. Customers will feel constantly sold to. Employee satisfaction drops as they're measured on sales instead of service. But attach rates go up, and that's the goal.",
+      "outcomes": {
+        "good": [{"profit": 38}, {"meter": "Alignment", "delta": 5}],
+        "expected": [{"profit": 22}, {"meter": "Alignment", "delta": -10}, {"meter": "Morale", "delta": -8}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -20}, {"meter": "Morale", "delta": -18}]
+      }
+    },
+    {
+      "cardId": "PROJ_TERMINATION_FEES",
+      "title": "Contract Lock-In Strengthening",
+      "description": "Increase penalties for customers who want to leave.",
+      "flavorText": "\"Cancellation is free. The early termination fee is 200% of remaining value.\"",
+      "category": "Revenue",
+      "meterAffinity": "Runway",
+      "corporateIntensity": 2,
+      "extendedDescription": "Add punitive termination fees to all new contracts. Auto-renewal with 90-day cancellation windows nobody remembers. Customers who try to leave will pay dearly—or stay. Customer lifetime value increases artificially. NPS decreases organically. The CFO calls it 'sticky revenue.'",
+      "outcomes": {
+        "good": [{"profit": 35}, {"meter": "Runway", "delta": 10}],
+        "expected": [{"profit": 22}, {"meter": "Alignment", "delta": -15}],
+        "bad": [{"profit": 8}, {"meter": "Alignment", "delta": -25}]
+      }
+    },
+    {
+      "cardId": "PROJ_REFERRAL",
+      "title": "Customer Referral Engine",
+      "description": "Turn customers into an unpaid sales force.",
+      "flavorText": "\"Refer 3 friends and get 10% off your next overpriced invoice.\"",
+      "category": "Revenue",
+      "meterAffinity": "Alignment",
+      "corporateIntensity": 0,
+      "extendedDescription": "Launch a referral program that makes customers do sales work for modest discounts. The most enthusiastic customers become unpaid evangelists. CAC drops dramatically for referred customers. Gaming and fraud will be an issue. But the unit economics look phenomenal in the board deck.",
+      "outcomes": {
+        "good": [{"profit": 40}, {"meter": "Alignment", "delta": 10}],
+        "expected": [{"profit": 22}, {"meter": "Alignment", "delta": -5}],
+        "bad": [{"profit": 5}, {"meter": "Alignment", "delta": -15}, {"meter": "Delivery", "delta": -5}]
+      }
+    }
+  ]
+}

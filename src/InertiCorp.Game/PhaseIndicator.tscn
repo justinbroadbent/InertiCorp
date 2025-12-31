@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://phase_indicator"]
+
+[ext_resource type="Script" path="res://PhaseIndicator.cs" id="1_phase"]
+
+[node name="PhaseIndicator" type="PanelContainer"]
+custom_minimum_size = Vector2(300, 0)
+offset_right = 300.0
+offset_bottom = 80.0
+script = ExtResource("1_phase")
