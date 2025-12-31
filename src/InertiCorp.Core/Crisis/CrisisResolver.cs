@@ -35,7 +35,7 @@ public static class CrisisResolver
     public static CrisisResolutionResult Resolve(
         CrisisInstance crisis,
         CrisisResponse response,
-        ResourceState resources,
+        ResourceState _,
         OrgState org,
         IRng rng)
     {
@@ -128,7 +128,7 @@ public static class CrisisResolver
 
     private static string GenerateNarrative(
         CrisisInstance crisis,
-        CrisisResponse response,
+        CrisisResponse _,
         OutcomeTier outcome,
         StaffQuality staff,
         int roll)

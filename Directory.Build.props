@@ -3,5 +3,21 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+
+    <!-- Enable .NET analyzers for dead code detection -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Treat warnings as errors for unused code in Release builds -->
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">false</TreatWarningsAsErrors>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Roslynator - comprehensive free analyzer -->
+    <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>

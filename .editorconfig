@@ -1,0 +1,65 @@
+# EditorConfig - https://editorconfig.org
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+# Dead code detection - report as warnings
+dotnet_diagnostic.IDE0051.severity = warning  # Private member is unused
+dotnet_diagnostic.IDE0052.severity = warning  # Private member can be removed
+dotnet_diagnostic.IDE0059.severity = warning  # Unnecessary assignment
+dotnet_diagnostic.IDE0060.severity = warning  # Unused parameter
+dotnet_diagnostic.CS0169.severity = warning   # Field is never used
+dotnet_diagnostic.CS0414.severity = warning   # Field assigned but never used
+dotnet_diagnostic.CS8019.severity = warning   # Unnecessary using directive
+dotnet_diagnostic.CS0168.severity = warning   # Variable declared but never used
+dotnet_diagnostic.CS0219.severity = warning   # Variable assigned but never used
+
+# Roslynator - unused code rules
+dotnet_diagnostic.RCS1163.severity = warning  # Unused parameter
+dotnet_diagnostic.RCS1213.severity = warning  # Remove unused member declaration
+dotnet_diagnostic.RCS1170.severity = warning  # Use read-only auto-property
+dotnet_diagnostic.RCS1169.severity = warning  # Mark field as read-only
+dotnet_diagnostic.RCS1097.severity = warning  # Remove redundant 'ToString' call
+dotnet_diagnostic.RCS1036.severity = warning  # Remove unnecessary blank line
+dotnet_diagnostic.RCS1037.severity = warning  # Remove trailing whitespace
+dotnet_diagnostic.RCS1038.severity = warning  # Remove empty statement
+
+# Code style
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = true:suggestion
+
+# Disable noisy rules
+dotnet_diagnostic.CA1848.severity = none      # Use LoggerMessage for logging
+dotnet_diagnostic.CA1305.severity = none      # Specify IFormatProvider
+dotnet_diagnostic.CA1307.severity = none      # Specify StringComparison
+dotnet_diagnostic.CA1310.severity = none      # Specify StringComparison for correctness
+dotnet_diagnostic.CA1812.severity = none      # Internal class never instantiated (false positive for JSON DTOs)
+dotnet_diagnostic.CA1724.severity = none      # Type name conflicts with namespace (Email is fine)
+dotnet_diagnostic.CA1062.severity = none      # Validate parameter is non-null (too noisy for game code)
+dotnet_diagnostic.CA1034.severity = none      # Do not nest types (common pattern for discriminated unions)
+dotnet_diagnostic.CA1008.severity = none      # Enum should have zero value (not always appropriate)
+dotnet_diagnostic.CA1819.severity = none      # Properties should not return arrays (fine for DTOs)
+dotnet_diagnostic.CA5394.severity = none      # Insecure random (game doesn't need crypto random)
+dotnet_diagnostic.CA1826.severity = none      # Use indexer instead of Enumerable (minor perf)
+dotnet_diagnostic.CA1508.severity = none      # Avoid dead conditional code (false positive for lazy init)
+dotnet_diagnostic.CA1869.severity = none      # Cache JsonSerializerOptions (minor perf, not hot path)
+dotnet_diagnostic.CA1308.severity = none      # Use ToUpperInvariant (game code, not security sensitive)
+dotnet_diagnostic.CA1859.severity = none      # Use concrete types for perf (interface is intentional)
+dotnet_diagnostic.CA1707.severity = none      # Identifiers with underscores (const naming convention)
+dotnet_diagnostic.CA1721.severity = none      # Property name conflicts with method (intentional API)
+dotnet_diagnostic.CA1024.severity = none      # Use properties (methods returning new instances are fine)
+dotnet_diagnostic.CA1002.severity = none      # Don't expose List<T> (fine for DTOs)
+dotnet_diagnostic.CA2227.severity = none      # Collection properties should be read-only (DTOs need setters)
+dotnet_diagnostic.CA1822.severity = none      # Mark as static (instance method is intentional for API)
+dotnet_diagnostic.CA2208.severity = none      # ArgumentException paramName (enum in switch is fine)
+dotnet_diagnostic.RCS1036.severity = none     # Remove unnecessary blank line (style preference)
+
+[*.{json,yml,yaml}]
+indent_size = 2

@@ -63,7 +63,7 @@ public sealed class EmailGenerator
         string eventDescription,
         IReadOnlyList<(Meter Meter, int Delta)> effects,
         int turnNumber,
-        int alignment,
+        int _,
         SenderArchetype sender)
     {
         var eventId = $"{threadId}_followup_{turnNumber}";

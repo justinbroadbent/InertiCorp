@@ -6,7 +6,6 @@ namespace InertiCorp.Core;
 public static class OutcomeRoller
 {
     private const int BaseGood = 20;
-    private const int BaseExpected = 60;
     private const int BaseBad = 20;
 
     // Honeymoon period - first few quarters are more forgiving
@@ -76,13 +75,13 @@ public static class OutcomeRoller
         int good = BaseGood + alignmentModifier - pressureModifier - evilModifier + honeymoonGoodBonus
                    + momentumBonus + affinitySynergyBonus + evilPathBonus;
         int bad = BaseBad - alignmentModifier + pressureModifier + evilModifier + cardRiskPenalty - honeymoonBadReduction;
-        int expected = 100 - good - bad;
 
         // Clamp to valid ranges
         good = Math.Clamp(good, 5, 60);  // Higher ceiling during honeymoon
         bad = Math.Clamp(bad, 5, 60);    // Allow higher bad ceiling for risky plays
-        expected = 100 - good - bad;
-        expected = Math.Clamp(expected, 10, 90);  // Lower floor when risk is high
+
+        // Expected is the remainder, clamped to valid range
+        int expected = Math.Clamp(100 - good - bad, 10, 90);
 
         // Normalize to exactly 100
         int total = good + expected + bad;

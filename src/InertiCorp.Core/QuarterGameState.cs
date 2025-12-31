@@ -222,7 +222,7 @@ public sealed record QuarterGameState
     /// Gets the PC cost for playing a card at the given position (0-indexed).
     /// Playing cards is free - PC is only earned from restraint (not playing cards).
     /// </summary>
-    public static int GetCardPCCost(int position) => 0;
+    public static int GetCardPCCost(int _) => 0;
 
     /// <summary>
     /// Gets the additional bad outcome risk modifier for a card at the given position (0-indexed).

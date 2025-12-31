@@ -558,7 +558,7 @@ public static class QuarterLoopEngine
         List<PendingSituation> deferredSituations,
         int currentQuarter,
         int seed,
-        IRng rng)
+        IRng _)
     {
         // Check each deferred situation for fade or resurface
         var toRemove = new List<PendingSituation>();
@@ -760,7 +760,7 @@ public static class QuarterLoopEngine
         EmailGenerator emailGen,
         BoardReviewResult review,
         int quarterNumber,
-        int alignment,
+        int _,
         int grossProfit = 0,
         int fines = 0)
     {

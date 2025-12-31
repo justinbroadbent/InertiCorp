@@ -60,7 +60,7 @@ public sealed record BoardDirective(
             // Scales from $7M to $21M over the game
             return Math.Min(21, 5 + pressure * 2);
         },
-        EvaluationFunc: (lastProfit, currentProfit, pressure) =>
+        EvaluationFunc: (_, currentProfit, pressure) =>
         {
             var required = Math.Min(21, 5 + pressure * 2);
             // Just need to hit the floor, not grow from last quarter

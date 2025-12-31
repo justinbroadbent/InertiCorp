@@ -156,7 +156,7 @@ public static class SituationResolver
     /// <param name="pending">The deferred situation</param>
     /// <param name="rng">Seeded random number generator</param>
     /// <returns>True if situation resurfaces</returns>
-    public static bool CheckResurface(PendingSituation pending, SeededRng rng)
+    public static bool CheckResurface(PendingSituation _, SeededRng rng)
     {
         // 30% chance per quarter to resurface
         var roll = rng.NextInt(1, 101);

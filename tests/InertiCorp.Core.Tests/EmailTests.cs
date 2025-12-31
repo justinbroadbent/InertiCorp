@@ -346,7 +346,7 @@ public class EmailGeneratorTests
             "A follow-up event occurred",
             new[] { (Meter.Morale, -5) },
             turnNumber: 2,
-            alignment: 50,
+            0, // alignment (unused)
             SenderArchetype.HR);
 
         Assert.Equal("thread_1", reply.ThreadId);
