@@ -65,7 +65,8 @@ jobs:
         shell: bash
 
       - name: Generate .NET bindings
-        run: "$GODOT" --headless --path src/InertiCorp.Game --build-solutions --quit || true
+        run: |
+          "$GODOT" --headless --path src/InertiCorp.Game --build-solutions --quit || true
         shell: bash
 
       - name: Build .NET project
