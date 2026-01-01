@@ -64,17 +64,29 @@ jobs:
       - name: Build .NET project
         run: dotnet build --configuration Release
 
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        shell: bash
+
       - name: Create build directory
         run: New-Item -ItemType Directory -Force -Path build
         shell: pwsh
 
       - name: Export Game
-        run: godot --headless --path src/InertiCorp.Game --export-release "Windows Desktop" "../../build/InertiCorp.exe"
+        run: |
+          $env:GODOT_EXPORT_PATH = "${{ github.workspace }}\build\InertiCorp.exe"
+          godot --headless --path src/InertiCorp.Game --export-release "Windows Desktop" $env:GODOT_EXPORT_PATH
+        shell: pwsh
 
-      - name: Get version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-        shell: bash
+      - name: Verify export succeeded
+        run: |
+          if (!(Test-Path "build\InertiCorp.exe")) {
+            Write-Error "Export failed - InertiCorp.exe not found"
+            exit 1
+          }
+          Get-ChildItem build | Format-Table Name, Length
+        shell: pwsh
 
       - name: Create ZIP archive
         run: |
@@ -93,7 +105,12 @@ jobs:
 
       - name: Build Installer
         run: |
+          # Update source path to use absolute path
+          $issContent = Get-Content installer/InertiCorp.iss -Raw
+          $issContent = $issContent -replace 'Source: "\.\.\\build\\\*"', "Source: `"${{ github.workspace }}\build\*`""
+          Set-Content installer/InertiCorp.iss $issContent
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"." /F"InertiCorp-${{ steps.version.outputs.VERSION }}-Setup" installer/InertiCorp.iss
+        shell: pwsh
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
