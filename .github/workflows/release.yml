@@ -75,17 +75,33 @@ jobs:
 
       - name: Export Game
         run: |
-          $env:GODOT_EXPORT_PATH = "${{ github.workspace }}\build\InertiCorp.exe"
-          godot --headless --path src/InertiCorp.Game --export-release "Windows Desktop" $env:GODOT_EXPORT_PATH
+          Write-Host "Exporting to: ${{ github.workspace }}\build\InertiCorp.exe"
+          Write-Host "Godot version:"
+          godot --version
+          Write-Host "Starting export..."
+          godot --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}\build\InertiCorp.exe" 2>&1
+          Write-Host "Export command completed with exit code: $LASTEXITCODE"
+        shell: pwsh
+        continue-on-error: true
+
+      - name: List build directory
+        run: |
+          Write-Host "Build directory contents:"
+          if (Test-Path "build") {
+            Get-ChildItem build -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          } else {
+            Write-Host "Build directory does not exist!"
+          }
         shell: pwsh
 
       - name: Verify export succeeded
         run: |
           if (!(Test-Path "build\InertiCorp.exe")) {
-            Write-Error "Export failed - InertiCorp.exe not found"
+            Write-Error "Export failed - InertiCorp.exe not found. Check export step output above."
             exit 1
           }
-          Get-ChildItem build | Format-Table Name, Length
+          Write-Host "Export succeeded! File count:"
+          (Get-ChildItem build -Recurse).Count
         shell: pwsh
 
       - name: Create ZIP archive
