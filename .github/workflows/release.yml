@@ -72,10 +72,6 @@ jobs:
       - name: Build .NET project
         run: dotnet build --configuration Release
 
-      - name: Publish .NET project for export
-        run: |
-          dotnet publish src/InertiCorp.Game/InertiCorp.Game.csproj -c Release --no-self-contained -r win-x64 -o src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease
-
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -91,8 +87,31 @@ jobs:
           "$GODOT" --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}/build/InertiCorp.exe"
         shell: bash
 
+      - name: Copy .NET assemblies to build
+        run: |
+          $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
+          New-Item -ItemType Directory -Force -Path $dataDir
+
+          # Copy from the Godot mono temp directory
+          $monoDir = "src\InertiCorp.Game\.godot\mono\temp\bin\Release"
+          if (Test-Path $monoDir) {
+            Copy-Item "$monoDir\*" $dataDir -Recurse -Force
+            Write-Host "Copied assemblies from: $monoDir"
+          }
+
+          # Also check for ExportRelease directory
+          $exportDir = "src\InertiCorp.Game\.godot\mono\temp\bin\ExportRelease"
+          if (Test-Path $exportDir) {
+            Copy-Item "$exportDir\*" $dataDir -Recurse -Force
+            Write-Host "Copied assemblies from: $exportDir"
+          }
+
+          Write-Host "Data directory contents:"
+          Get-ChildItem $dataDir -Recurse | Select-Object FullName
+        shell: pwsh
+
       - name: List build directory
-        run: ls -la build/
+        run: ls -laR build/
         shell: bash
 
       - name: Verify export succeeded
@@ -167,15 +186,33 @@ jobs:
       - name: Build .NET project
         run: dotnet build --configuration Release
 
-      - name: Publish .NET project for export
-        run: |
-          dotnet publish src/InertiCorp.Game/InertiCorp.Game.csproj -c Release --no-self-contained -r linux-x64 -o src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease
-
       - name: Create build directory
         run: mkdir -p build
 
       - name: Export Game
         run: godot --headless --path src/InertiCorp.Game --export-release "Linux" "../../build/InertiCorp.x86_64"
+
+      - name: Copy .NET assemblies to build
+        run: |
+          DATA_DIR="build/data_InertiCorp.Game_linuxbsd_x86_64"
+          mkdir -p "$DATA_DIR"
+
+          # Copy from the Godot mono temp directory
+          MONO_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/Release"
+          if [ -d "$MONO_DIR" ]; then
+            cp -r "$MONO_DIR"/* "$DATA_DIR/" || true
+            echo "Copied assemblies from: $MONO_DIR"
+          fi
+
+          # Also check for ExportRelease directory
+          EXPORT_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease"
+          if [ -d "$EXPORT_DIR" ]; then
+            cp -r "$EXPORT_DIR"/* "$DATA_DIR/" || true
+            echo "Copied assemblies from: $EXPORT_DIR"
+          fi
+
+          echo "Data directory contents:"
+          ls -la "$DATA_DIR"
 
       - name: Get version from tag
         id: version
