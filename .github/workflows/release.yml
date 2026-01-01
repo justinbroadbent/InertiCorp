@@ -57,47 +57,16 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Debug Godot environment
+      - name: Verify Godot setup
         run: |
-          Write-Host "GODOT env var: $env:GODOT"
-          Write-Host "GODOT4 env var: $env:GODOT4"
-          Write-Host ""
-          Write-Host "=== Bin directory contents ==="
-          Get-ChildItem "C:\Users\runneradmin\bin" | Format-Table Name, Length, Mode
-          Write-Host ""
-          Write-Host "=== Checking different extensions ==="
-          $paths = @("$env:GODOT", "$env:GODOT.exe", "$env:GODOT.cmd", "$env:GODOT.bat")
-          foreach ($p in $paths) {
-            if (Test-Path $p) {
-              Write-Host "EXISTS: $p"
-            } else {
-              Write-Host "MISSING: $p"
-            }
-          }
-          Write-Host ""
-          Write-Host "=== Testing execution ==="
-          Write-Host "Trying: & `"$env:GODOT`" --version"
-          $result = & "$env:GODOT" --version 2>&1
-          Write-Host "Result: $result"
-          Write-Host "Exit code: $LASTEXITCODE"
-          Write-Host ""
-          Write-Host "Trying with .exe:"
-          if (Test-Path "$env:GODOT.exe") {
-            $result2 = & "$env:GODOT.exe" --version 2>&1
-            Write-Host "Result: $result2"
-            Write-Host "Exit code: $LASTEXITCODE"
-          }
-          Write-Host ""
-          Write-Host "Trying cmd.exe /c:"
-          $result3 = cmd.exe /c "$env:GODOT --version" 2>&1
-          Write-Host "Result: $result3"
-        shell: pwsh
+          echo "GODOT: $GODOT"
+          echo "Godot version:"
+          "$GODOT" --version
+        shell: bash
 
       - name: Generate .NET bindings
-        run: |
-          & $env:GODOT --headless --path src/InertiCorp.Game --build-solutions --quit
-        shell: pwsh
-        continue-on-error: true
+        run: "$GODOT" --headless --path src/InertiCorp.Game --build-solutions --quit || true
+        shell: bash
 
       - name: Build .NET project
         run: dotnet build --configuration Release
@@ -113,39 +82,23 @@ jobs:
 
       - name: Export Game
         run: |
-          $godot = $env:GODOT
-          Write-Host "Using Godot binary: $godot"
-          Write-Host "Godot version:"
-          & $godot --version
-          Write-Host "Starting export to: ${{ github.workspace }}\build\InertiCorp.exe"
-          & $godot --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}\build\InertiCorp.exe" 2>&1
-          $exitCode = $LASTEXITCODE
-          Write-Host "Export completed with exit code: $exitCode"
-          if ($exitCode -ne 0) {
-            Write-Host "Export may have failed!"
-          }
-        shell: pwsh
-        continue-on-error: true
+          echo "Exporting to: ${{ github.workspace }}/build/InertiCorp.exe"
+          "$GODOT" --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}/build/InertiCorp.exe"
+        shell: bash
 
       - name: List build directory
-        run: |
-          Write-Host "Build directory contents:"
-          if (Test-Path "build") {
-            Get-ChildItem build -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
-          } else {
-            Write-Host "Build directory does not exist!"
-          }
-        shell: pwsh
+        run: ls -la build/
+        shell: bash
 
       - name: Verify export succeeded
         run: |
-          if (!(Test-Path "build\InertiCorp.exe")) {
-            Write-Error "Export failed - InertiCorp.exe not found. Check export step output above."
+          if [ ! -f "build/InertiCorp.exe" ]; then
+            echo "Export failed - InertiCorp.exe not found"
             exit 1
-          }
-          Write-Host "Export succeeded! File count:"
-          (Get-ChildItem build -Recurse).Count
-        shell: pwsh
+          fi
+          echo "Export succeeded! File count:"
+          find build -type f | wc -l
+        shell: bash
 
       - name: Create ZIP archive
         run: |
