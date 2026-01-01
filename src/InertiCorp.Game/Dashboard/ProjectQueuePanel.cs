@@ -596,69 +596,8 @@ public partial class ProjectQueuePanel : PanelContainer
         entry.StatusLabel = statusLabel;
         container.AddChild(statusLabel);
 
-        // Hover expansion drawer - shows full details on hover
-        var drawerPanel = new PanelContainer
-        {
-            Visible = false,
-            Name = "DrawerPanel"
-        };
-        var drawerStyle = new StyleBoxFlat
-        {
-            BgColor = new Color(0.12f, 0.13f, 0.16f),
-            BorderWidthLeft = 2,
-            BorderWidthRight = 0,
-            BorderWidthTop = 0,
-            BorderWidthBottom = 0,
-            BorderColor = new Color(0.3f, 0.5f, 0.4f, 0.8f),
-            ContentMarginLeft = 8,
-            ContentMarginRight = 4,
-            ContentMarginTop = 4,
-            ContentMarginBottom = 4
-        };
-        drawerPanel.AddThemeStyleboxOverride("panel", drawerStyle);
-
-        var drawerContent = new VBoxContainer();
-        drawerContent.AddThemeConstantOverride("separation", 4);
-        drawerPanel.AddChild(drawerContent);
-
-        // Full title in drawer
-        var fullTitle = new Label
-        {
-            Text = entry.Title,
-            AutowrapMode = TextServer.AutowrapMode.Word
-        };
-        fullTitle.AddThemeFontSizeOverride("font_size", 10);
-        fullTitle.Modulate = new Color(0.9f, 0.9f, 0.95f);
-        drawerContent.AddChild(fullTitle);
-
-        // Description in drawer
-        var descLabel = new Label
-        {
-            Text = entry.Description,
-            AutowrapMode = TextServer.AutowrapMode.Word
-        };
-        descLabel.AddThemeFontSizeOverride("font_size", 9);
-        descLabel.Modulate = new Color(0.7f, 0.7f, 0.75f);
-        drawerContent.AddChild(descLabel);
-
-        container.AddChild(drawerPanel);
-
-        // Store references for hover handling
-        var titleLabelRef = titleLabel;
-        var drawerRef = drawerPanel;
-        var fullTitleStr = entry.Title;
-
-        // Hover event handlers
-        container.MouseEntered += () =>
-        {
-            drawerRef.Visible = true;
-            titleLabelRef.Text = fullTitleStr; // Show full title when hovered
-        };
-        container.MouseExited += () =>
-        {
-            drawerRef.Visible = false;
-            titleLabelRef.Text = TruncateText(fullTitleStr, 22); // Back to truncated
-        };
+        // Set tooltip with full title and description for hover
+        container.TooltipText = $"{entry.Title}\n\n{entry.Description}";
 
         return container;
     }
