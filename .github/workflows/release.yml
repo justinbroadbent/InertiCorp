@@ -61,15 +61,36 @@ jobs:
         run: |
           Write-Host "GODOT env var: $env:GODOT"
           Write-Host "GODOT4 env var: $env:GODOT4"
-          Write-Host "Checking if binary exists..."
-          if (Test-Path $env:GODOT) {
-            Write-Host "Binary found at: $env:GODOT"
-            Get-Item $env:GODOT | Format-List
-          } else {
-            Write-Host "Binary NOT found at: $env:GODOT"
+          Write-Host ""
+          Write-Host "=== Bin directory contents ==="
+          Get-ChildItem "C:\Users\runneradmin\bin" | Format-Table Name, Length, Mode
+          Write-Host ""
+          Write-Host "=== Checking different extensions ==="
+          $paths = @("$env:GODOT", "$env:GODOT.exe", "$env:GODOT.cmd", "$env:GODOT.bat")
+          foreach ($p in $paths) {
+            if (Test-Path $p) {
+              Write-Host "EXISTS: $p"
+            } else {
+              Write-Host "MISSING: $p"
+            }
           }
-          Write-Host "Testing direct execution:"
-          & $env:GODOT --version
+          Write-Host ""
+          Write-Host "=== Testing execution ==="
+          Write-Host "Trying: & `"$env:GODOT`" --version"
+          $result = & "$env:GODOT" --version 2>&1
+          Write-Host "Result: $result"
+          Write-Host "Exit code: $LASTEXITCODE"
+          Write-Host ""
+          Write-Host "Trying with .exe:"
+          if (Test-Path "$env:GODOT.exe") {
+            $result2 = & "$env:GODOT.exe" --version 2>&1
+            Write-Host "Result: $result2"
+            Write-Host "Exit code: $LASTEXITCODE"
+          }
+          Write-Host ""
+          Write-Host "Trying cmd.exe /c:"
+          $result3 = cmd.exe /c "$env:GODOT --version" 2>&1
+          Write-Host "Result: $result3"
         shell: pwsh
 
       - name: Generate .NET bindings
