@@ -25,7 +25,7 @@ public sealed class LlmEmailService : IDisposable
 
     private const int MaxQueueSize = 20;
     private const int MaxCacheSize = 100;
-    private const int MaxTokens = 100;  // Reduced from 150 - emails are short
+    private const int MaxTokens = 300;  // Tripled to avoid truncation
 
     /// <summary>
     /// Event raised when the LLM is ready for generation.
