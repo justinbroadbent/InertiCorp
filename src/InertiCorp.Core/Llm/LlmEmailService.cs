@@ -19,12 +19,13 @@ public sealed class LlmEmailService : IDisposable
     private LLamaWeights? _model;
     private ModelParams? _modelParams;
     private ModelInfo? _activeModelInfo;
+    private LLamaContext? _sharedContext;  // Reusable context for faster inference
     private CancellationTokenSource? _backgroundCts;
     private Task? _backgroundTask;
 
     private const int MaxQueueSize = 20;
     private const int MaxCacheSize = 100;
-    private const int MaxTokens = 150;
+    private const int MaxTokens = 100;  // Reduced from 150 - emails are short
 
     /// <summary>
     /// Event raised when the LLM is ready for generation.
@@ -45,6 +46,12 @@ public sealed class LlmEmailService : IDisposable
     /// Whether the service is currently loading a model.
     /// </summary>
     public bool IsLoading { get; private set; }
+
+    /// <summary>
+    /// Whether the service is currently generating content.
+    /// </summary>
+    public bool IsGenerating => !_generationQueue.IsEmpty || _isActivelyGenerating;
+    private volatile bool _isActivelyGenerating;
 
     /// <summary>
     /// The name of the currently loaded model.
@@ -88,14 +95,22 @@ public sealed class LlmEmailService : IDisposable
             // Unload existing model
             UnloadModel();
 
+            // Optimize parameters based on model tier
+            var (contextSize, gpuLayers) = GetOptimizedParams(modelInfo);
+
             _modelParams = new ModelParams(modelPath)
             {
-                ContextSize = 2048,
-                GpuLayerCount = 35, // Offload to GPU if available
+                ContextSize = contextSize,
+                GpuLayerCount = gpuLayers,
+                BatchSize = 512,  // Process more tokens at once
+                Threads = Math.Max(4, Environment.ProcessorCount / 2),  // Use half of CPU cores
             };
 
             _model = await LLamaWeights.LoadFromFileAsync(_modelParams, ct);
             _activeModelInfo = modelInfo;
+
+            // Create a shared context for faster inference (avoids recreating each time)
+            _sharedContext = _model.CreateContext(_modelParams);
 
             // Start background generation
             StartBackgroundGeneration();
@@ -117,11 +132,34 @@ public sealed class LlmEmailService : IDisposable
     }
 
     /// <summary>
+    /// Gets optimized context size and GPU layers based on model tier.
+    /// Smaller context = faster inference for short prompts.
+    /// </summary>
+    private static (uint contextSize, int gpuLayers) GetOptimizedParams(ModelInfo modelInfo)
+    {
+        return modelInfo.Tier switch
+        {
+            // TinyLlama, small Qwen - minimal context, full GPU offload
+            ModelTier.Fast => (512u, 50),
+
+            // Phi-3 Mini - balanced
+            ModelTier.Balanced => (768u, 40),
+
+            // Mistral 7B - larger but still optimized
+            ModelTier.Quality => (1024u, 35),
+
+            _ => (768u, 35)
+        };
+    }
+
+    /// <summary>
     /// Unloads the current model.
     /// </summary>
     public void UnloadModel()
     {
         StopBackgroundGeneration();
+        _sharedContext?.Dispose();
+        _sharedContext = null;
         _model?.Dispose();
         _model = null;
         _activeModelInfo = null;
@@ -167,6 +205,191 @@ public sealed class LlmEmailService : IDisposable
         // Queue a background generation for next time
         QueueGeneration(situation, outcome, senderName, senderTitle);
         return null;
+    }
+
+    /// <summary>
+    /// Gets optimized inference parameters based on model tier.
+    /// Fast models use lower temperature for quicker sampling.
+    /// </summary>
+    private InferenceParams GetOptimizedInferenceParams(int maxTokens)
+    {
+        var (temp, topP) = _activeModelInfo!.Tier switch
+        {
+            ModelTier.Fast => (0.7f, 0.85f),      // Lower = faster, more deterministic
+            ModelTier.Balanced => (0.75f, 0.88f),
+            ModelTier.Quality => (0.8f, 0.9f),
+            _ => (0.75f, 0.88f)
+        };
+
+        return new InferenceParams
+        {
+            MaxTokens = maxTokens,
+            AntiPrompts = _activeModelInfo.StopTokens,
+            SamplingPipeline = new LLama.Sampling.DefaultSamplingPipeline
+            {
+                Temperature = temp,
+                TopP = topP,
+            },
+        };
+    }
+
+    /// <summary>
+    /// Generates an email body for a card result.
+    /// Returns the generated text or null if not ready.
+    /// </summary>
+    public async Task<string?> GenerateCardEmailAsync(
+        string cardTitle,
+        string cardDescription,
+        string outcomeTier,
+        CancellationToken ct = default)
+    {
+        if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
+            return null;
+
+        try
+        {
+            var prompt = BuildCardPrompt(cardTitle, cardDescription, outcomeTier);
+            var executor = new StatelessExecutor(_model, _modelParams);
+            var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
+
+            var result = new StringBuilder();
+            await foreach (var token in executor.InferAsync(prompt, inferenceParams, ct))
+            {
+                result.Append(token);
+            }
+
+            return CleanEmailBody(result.ToString());
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier)
+    {
+        // Concise prompt to reduce tokens and speed up inference
+        var userPrompt = $"""
+            Write a satirical 50-70 word corporate email about project results.
+            Project: {cardTitle} - {cardDescription}
+            Outcome: {outcomeTier}
+            Style: Passive-aggressive, darkly funny. Body only, no greeting/signature.
+            """;
+
+        var systemPrompt = "Satirical corporate email writer. Passive-aggressive, darkly funny. Output body only.";
+
+        return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
+    }
+
+    /// <summary>
+    /// Generates an email body for a crisis event.
+    /// Returns the generated text or null if not ready.
+    /// </summary>
+    public async Task<string?> GenerateCrisisEmailAsync(
+        string crisisTitle,
+        string crisisDescription,
+        bool isResolution = false,
+        string? choiceLabel = null,
+        string? outcomeTier = null,
+        CancellationToken ct = default)
+    {
+        if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
+            return null;
+
+        try
+        {
+            var prompt = BuildCrisisPrompt(crisisTitle, crisisDescription, isResolution, choiceLabel, outcomeTier);
+            var executor = new StatelessExecutor(_model, _modelParams);
+            var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
+
+            var result = new StringBuilder();
+            await foreach (var token in executor.InferAsync(prompt, inferenceParams, ct))
+            {
+                result.Append(token);
+            }
+
+            return CleanEmailBody(result.ToString());
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generates a humorous corporate response to a freeform email from the CEO.
+    /// Returns the generated response or null if not ready.
+    /// </summary>
+    public async Task<string?> GenerateFreeformResponseAsync(
+        string subject,
+        string ceoMessage,
+        string recipient,
+        CancellationToken ct = default)
+    {
+        if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
+            return null;
+
+        try
+        {
+            var prompt = BuildFreeformPrompt(subject, ceoMessage, recipient);
+            var executor = new StatelessExecutor(_model, _modelParams);
+            // Use slightly higher token count for freeform, but still optimized
+            var inferenceParams = GetOptimizedInferenceParams(MaxTokens + 20);
+
+            var result = new StringBuilder();
+            await foreach (var token in executor.InferAsync(prompt, inferenceParams, ct))
+            {
+                result.Append(token);
+            }
+
+            return CleanEmailBody(result.ToString());
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private string BuildFreeformPrompt(string subject, string ceoMessage, string recipient)
+    {
+        // Prompt that actually responds to what the CEO said
+        var userPrompt = $"""
+            The CEO sent this email to {recipient}:
+            Subject: "{subject}"
+            Message: "{ceoMessage}"
+
+            Write a 60-80 word reply that DIRECTLY RESPONDS to what the CEO said.
+            If they asked a question, answer it (with corporate spin).
+            If they made a statement, acknowledge and build on it.
+            Stay in character as a passive-aggressive middle manager.
+            Include one made-up metric. Use corporate buzzwords.
+            Write ONLY the reply body, no greeting or signature.
+            """;
+
+        var systemPrompt = "You are a passive-aggressive middle manager replying to the CEO. Always directly address what they said. Use corporate speak and fake metrics.";
+
+        return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
+    }
+
+    private string BuildCrisisPrompt(string crisisTitle, string crisisDescription, bool isResolution, string? choiceLabel, string? outcomeTier)
+    {
+        // Concise prompts to reduce tokens
+        string userPrompt = isResolution
+            ? $"""
+                Write a satirical 50-70 word corporate email about crisis resolution.
+                Crisis: {crisisTitle} - {crisisDescription}
+                Action: {choiceLabel ?? "handled it"} | Outcome: {outcomeTier ?? "Expected"}
+                Style: Corporate doublespeak, stressed manager. Body only.
+                """
+            : $"""
+                Write a satirical 50-70 word URGENT corporate email about a crisis.
+                Crisis: {crisisTitle} - {crisisDescription}
+                Style: Panicked manager, excessive urgency. Body only.
+                """;
+
+        var systemPrompt = "Satirical corporate crisis writer. Panic through corporate speak. Body only.";
+
+        return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
 
     /// <summary>
@@ -218,19 +441,27 @@ public sealed class LlmEmailService : IDisposable
                 // Process queued requests
                 if (_generationQueue.TryDequeue(out var request))
                 {
-                    var email = await GenerateEmailAsync(request, ct);
-                    if (email != null)
+                    _isActivelyGenerating = true;
+                    try
                     {
-                        var cacheKey = $"{request.Situation.SituationId}_{request.Outcome}_{request.SenderName}";
-                        _cache.TryAdd(cacheKey, email);
-
-                        // Limit cache size
-                        while (_cache.Count > MaxCacheSize)
+                        var email = await GenerateEmailAsync(request, ct);
+                        if (email != null)
                         {
-                            var firstKey = _cache.Keys.FirstOrDefault();
-                            if (firstKey != null)
-                                _cache.TryRemove(firstKey, out _);
+                            var cacheKey = $"{request.Situation.SituationId}_{request.Outcome}_{request.SenderName}";
+                            _cache.TryAdd(cacheKey, email);
+
+                            // Limit cache size
+                            while (_cache.Count > MaxCacheSize)
+                            {
+                                var firstKey = _cache.Keys.FirstOrDefault();
+                                if (firstKey != null)
+                                    _cache.TryRemove(firstKey, out _);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        _isActivelyGenerating = false;
                     }
                 }
 
@@ -263,19 +494,8 @@ public sealed class LlmEmailService : IDisposable
         try
         {
             var prompt = BuildPrompt(request);
-            using var context = _model.CreateContext(_modelParams);
             var executor = new StatelessExecutor(_model, _modelParams);
-
-            var inferenceParams = new InferenceParams
-            {
-                MaxTokens = MaxTokens,
-                AntiPrompts = _activeModelInfo.StopTokens,
-                SamplingPipeline = new LLama.Sampling.DefaultSamplingPipeline
-                {
-                    Temperature = 0.8f,
-                    TopP = 0.9f,
-                },
-            };
+            var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
 
             var result = new StringBuilder();
             await foreach (var token in executor.InferAsync(prompt, inferenceParams, ct))
@@ -303,20 +523,16 @@ public sealed class LlmEmailService : IDisposable
 
     private string BuildPrompt(GenerationRequest request)
     {
+        // Concise prompt for faster background generation
         var userPrompt = $"""
-            You write satirical corporate emails for a dark comedy game. Write a short email (60-80 words) with dark humor and passive-aggressive corporate speak.
-
-            Situation: {request.Situation.Title}
-            Description: {request.Situation.Description}
+            Write a satirical 50-70 word corporate email.
+            Situation: {request.Situation.Title} - {request.Situation.Description}
             Outcome: {request.Outcome}
-            From: {request.SenderName}, {request.SenderTitle}
-
-            Write ONLY the email body addressed to "CEO". No subject line, no signature. Be satirical and darkly funny.
+            Style: Passive-aggressive, darkly funny. Body only.
             """;
 
-        var systemPrompt = "You write satirical corporate emails. Be darkly funny and use passive-aggressive corporate speak. Output only the email body, nothing else.";
+        var systemPrompt = "Satirical corporate email writer. Passive-aggressive, darkly funny. Body only.";
 
-        // Format according to model's expected format
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
 
@@ -357,6 +573,8 @@ public sealed class LlmEmailService : IDisposable
     public void Dispose()
     {
         StopBackgroundGeneration();
+        _sharedContext?.Dispose();
+        _sharedContext = null;
         _model?.Dispose();
     }
 

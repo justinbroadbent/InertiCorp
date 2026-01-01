@@ -2,11 +2,20 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>InertiCorp.Core</RootNamespace>
+    <Configurations>Debug;Release;ExportDebug;ExportRelease</Configurations>
+  </PropertyGroup>
+
+  <!-- Godot export configurations (same as Release) -->
+  <PropertyGroup Condition="'$(Configuration)' == 'ExportDebug' or '$(Configuration)' == 'ExportRelease'">
+    <Optimize>true</Optimize>
+    <!-- Fix LLamaSharp conflicting native DLLs issue -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Content\EmailTemplates.json" />
     <EmbeddedResource Include="Content\ProjectCards.json" />
     <EmbeddedResource Include="Content\CrisisCards.json" />
+    <EmbeddedResource Include="Content\company_directory.json" />
   </ItemGroup>
   <ItemGroup>
     <!-- LLM support for dynamic email generation -->

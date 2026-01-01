@@ -1,10 +1,13 @@
+using System.Threading;
 using Godot;
 using InertiCorp.Core;
 using InertiCorp.Core.Cards;
 using InertiCorp.Core.Content;
 using InertiCorp.Core.Crisis;
 using InertiCorp.Core.Email;
+using InertiCorp.Core.Llm;
 using InertiCorp.Core.Quarter;
+using InertiCorp.Game.Audio;
 using InertiCorp.Game.Settings;
 
 namespace InertiCorp.Game.Dashboard;
@@ -41,6 +44,7 @@ public partial class CEODashboard : Control
     // Center inbox panel
     private VBoxContainer? _inboxContainer;
     private ScrollContainer? _inboxScroll;
+    private bool _trashExpanded = false; // Recycle bin starts collapsed like Outlook
     private VBoxContainer? _emailDetailContainer;
     private EmailThread? _selectedThread;
     private bool _isShowingEmailThread; // Re-entrance guard
@@ -87,6 +91,18 @@ public partial class CEODashboard : Control
     private const double CrisisCheckInterval = 45.0; // Check every 45 seconds
     private const int CrisisChance = 8; // 8% chance per check (~10% per minute)
 
+    // AI status indicator ("Cognitive Synergy Engine")
+    private Label? _aiStatusLabel;
+    private Label? _aiStatusDot;
+    private bool _aiBlinkState;
+    private double _aiBlinkTimer;
+
+    // Music mute button
+    private Button? _muteButton;
+
+    // Project queue panel (shows active projects with fake progress)
+    private ProjectQueuePanel? _projectQueuePanel;
+
     public override void _Ready()
     {
         _gameManager = GetNode<GameManager>("/root/Main/GameManager");
@@ -103,6 +119,38 @@ public partial class CEODashboard : Control
         }
 
         UpdateDashboard();
+
+        // Show first-run AI model setup dialog if needed
+        if (FirstRunModelDialog.ShouldShowFirstRun())
+        {
+            // Use CallDeferred to ensure scene tree is fully ready
+            CallDeferred(MethodName.ShowFirstRunDialog);
+        }
+    }
+
+    private void ShowFirstRunDialog()
+    {
+        var dialog = new FirstRunModelDialog();
+        dialog.SetupComplete += OnFirstRunComplete;
+        GetTree().Root.AddChild(dialog);
+    }
+
+    private async void OnFirstRunComplete(bool modelDownloaded)
+    {
+        // If a model was downloaded, reload the LLM service to use it
+        if (modelDownloaded)
+        {
+            GD.Print("[Dashboard] Model downloaded, loading LLM service...");
+            try
+            {
+                await LlmServiceManager.ReloadModelAsync();
+                GD.Print($"[Dashboard] LLM model loaded: {LlmServiceManager.LoadedModelName}");
+            }
+            catch (System.Exception ex)
+            {
+                GD.PrintErr($"[Dashboard] Failed to load LLM model: {ex.Message}");
+            }
+        }
     }
 
     private void SetupTooltipStyle()
@@ -1007,6 +1055,65 @@ public partial class CEODashboard : Control
             "• No projects = minimal golden parachute\n\n" +
             "The board expects active leadership!";
 
+        // AI Status Indicator - "Cognitive Synergy Engine"
+        var aiBox = new PanelContainer();
+        var aiStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.05f, 0.1f, 0.12f),
+            ContentMarginLeft = 8,
+            ContentMarginRight = 8,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+        aiStyle.BorderWidthTop = 1;
+        aiStyle.BorderWidthBottom = 1;
+        aiStyle.BorderWidthLeft = 1;
+        aiStyle.BorderWidthRight = 1;
+        aiStyle.BorderColor = new Color(0.2f, 0.35f, 0.4f);
+        aiStyle.CornerRadiusTopLeft = 4;
+        aiStyle.CornerRadiusTopRight = 4;
+        aiStyle.CornerRadiusBottomLeft = 4;
+        aiStyle.CornerRadiusBottomRight = 4;
+        aiBox.AddThemeStyleboxOverride("panel", aiStyle);
+        hbox.AddChild(aiBox);
+
+        var aiHbox = new HBoxContainer();
+        aiHbox.AddThemeConstantOverride("separation", 4);
+        aiBox.AddChild(aiHbox);
+
+        _aiStatusDot = new Label { Text = "●" };
+        _aiStatusDot.AddThemeFontSizeOverride("font_size", 10);
+        _aiStatusDot.Modulate = new Color(0.3f, 0.3f, 0.35f); // Dim when inactive
+        aiHbox.AddChild(_aiStatusDot);
+
+        _aiStatusLabel = new Label { Text = "CSE" };
+        _aiStatusLabel.AddThemeFontSizeOverride("font_size", 10);
+        _aiStatusLabel.Modulate = new Color(0.4f, 0.5f, 0.55f);
+        aiHbox.AddChild(_aiStatusLabel);
+
+        // Tooltip explaining the "Cognitive Synergy Engine"
+        aiBox.TooltipText = "Cognitive Synergy Engine™\n" +
+            "━━━━━━━━━━━━━━━━━━━━\n" +
+            "Proprietary AI-powered insight generator.\n\n" +
+            "STATUS:\n" +
+            "• Grey: Offline (no model loaded)\n" +
+            "• Blinking Green: Synergizing insights\n" +
+            "• Solid Green: Ready for strategic ideation\n\n" +
+            "Configure in Settings > AI Models.\n\n" +
+            "\"Leveraging machine learning to optimize\n" +
+            "cross-functional communication paradigms.\"";
+
+        // Music mute button
+        _muteButton = new Button
+        {
+            CustomMinimumSize = new Vector2(35, 35),
+            TooltipText = "Toggle Music"
+        };
+        _muteButton.AddThemeFontSizeOverride("font_size", 16);
+        UpdateMuteButtonText();
+        _muteButton.Pressed += OnMutePressed;
+        hbox.AddChild(_muteButton);
+
         // Reports button
         var reportsButton = new Button
         {
@@ -1107,9 +1214,14 @@ public partial class CEODashboard : Control
         panel.AddThemeStyleboxOverride("panel", panelStyle);
         parent.AddChild(panel);
 
+        // Main vbox for the panel - metrics at top, project queue at bottom
+        var mainVbox = new VBoxContainer();
+        mainVbox.AddThemeConstantOverride("separation", 10);
+        panel.AddChild(mainVbox);
+
         _metricsContainer = new VBoxContainer();
         _metricsContainer.AddThemeConstantOverride("separation", 10);
-        panel.AddChild(_metricsContainer);
+        mainVbox.AddChild(_metricsContainer);
 
         var metricsTitle = new Label { Text = "COMPANY" };
         metricsTitle.AddThemeFontSizeOverride("font_size", 10);
@@ -1117,6 +1229,25 @@ public partial class CEODashboard : Control
         _metricsContainer.AddChild(metricsTitle);
 
         _metricsContainer.AddChild(new HSeparator());
+
+        // Spacer to push project queue to bottom
+        var spacer = new Control { SizeFlagsVertical = SizeFlags.ExpandFill };
+        mainVbox.AddChild(spacer);
+
+        // Project queue panel at bottom
+        _projectQueuePanel = new ProjectQueuePanel();
+        _projectQueuePanel.ProjectCompleted += OnProjectCompleted;
+        mainVbox.AddChild(_projectQueuePanel);
+    }
+
+    private void OnProjectCompleted(string cardId)
+    {
+        // Project completed - card was already played in TryAddProject,
+        // AI content already generated. Just emit StateChanged to show the email.
+        GD.Print($"[Dashboard] Project completed: {cardId}, email now visible");
+
+        // Emit StateChanged to refresh UI and show the now-visible email
+        _gameManager?.EmitSignal(GameManager.SignalName.StateChanged);
     }
 
     private void BuildInboxCenterPanel(HBoxContainer parent)
@@ -1185,11 +1316,70 @@ public partial class CEODashboard : Control
         inboxHeaderPanel.AddThemeStyleboxOverride("panel", inboxHeaderStyle);
         threadListVbox.AddChild(inboxHeaderPanel);
 
-        var inboxTitle = new Label { Text = "INBOX" };
+        // Header row with compose button and title
+        var inboxHeaderRow = new HBoxContainer();
+        inboxHeaderRow.AddThemeConstantOverride("separation", 8);
+        inboxHeaderPanel.AddChild(inboxHeaderRow);
+
+        var composeButton = new Button
+        {
+            Text = "✉ Compose",
+            CustomMinimumSize = new Vector2(95, 28),
+            TooltipText = "Write a freeform email"
+        };
+        composeButton.AddThemeFontSizeOverride("font_size", 11);
+        var composeBtnStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.2f, 0.35f, 0.5f),
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4,
+            CornerRadiusTopLeft = 4,
+            CornerRadiusTopRight = 4,
+            CornerRadiusBottomLeft = 4,
+            CornerRadiusBottomRight = 4
+        };
+        composeBtnStyle.BorderWidthTop = 1;
+        composeBtnStyle.BorderWidthBottom = 1;
+        composeBtnStyle.BorderWidthLeft = 1;
+        composeBtnStyle.BorderWidthRight = 1;
+        composeBtnStyle.BorderColor = new Color(0.4f, 0.6f, 0.8f);
+        composeButton.AddThemeStyleboxOverride("normal", composeBtnStyle);
+        var composeBtnHover = new StyleBoxFlat
+        {
+            BgColor = new Color(0.25f, 0.45f, 0.6f),
+            ContentMarginLeft = 10,
+            ContentMarginRight = 10,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4,
+            CornerRadiusTopLeft = 4,
+            CornerRadiusTopRight = 4,
+            CornerRadiusBottomLeft = 4,
+            CornerRadiusBottomRight = 4
+        };
+        composeBtnHover.BorderWidthTop = 1;
+        composeBtnHover.BorderWidthBottom = 1;
+        composeBtnHover.BorderWidthLeft = 1;
+        composeBtnHover.BorderWidthRight = 1;
+        composeBtnHover.BorderColor = new Color(0.5f, 0.7f, 0.9f);
+        composeButton.AddThemeStyleboxOverride("hover", composeBtnHover);
+        composeButton.Pressed += OnComposePressed;
+        inboxHeaderRow.AddChild(composeButton);
+
+        var inboxTitle = new Label
+        {
+            Text = "INBOX",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
         inboxTitle.AddThemeFontSizeOverride("font_size", 16);
         inboxTitle.Modulate = new Color(0.7f, 0.85f, 1.0f);
-        inboxTitle.HorizontalAlignment = HorizontalAlignment.Center;
-        inboxHeaderPanel.AddChild(inboxTitle);
+        inboxHeaderRow.AddChild(inboxTitle);
+
+        // Spacer to balance the compose button
+        var spacer = new Control { CustomMinimumSize = new Vector2(80, 0) };
+        inboxHeaderRow.AddChild(spacer);
 
         _inboxScroll = new ScrollContainer
         {
@@ -1640,6 +1830,206 @@ public partial class CEODashboard : Control
             _crisisTimer = 0;
             TryTriggerRandomCrisis();
         }
+
+        // AI status indicator blinking
+        UpdateAIStatusIndicator(delta);
+    }
+
+    private void UpdateAIStatusIndicator(double delta)
+    {
+        if (_aiStatusDot is null || _aiStatusLabel is null) return;
+
+        var isReady = LlmServiceManager.IsReady;
+        var isLoading = LlmServiceManager.IsLoading;
+
+        if (!isReady && !isLoading)
+        {
+            // Offline - dim grey
+            _aiStatusDot.Modulate = new Color(0.3f, 0.3f, 0.35f);
+            _aiStatusLabel.Modulate = new Color(0.4f, 0.5f, 0.55f);
+            return;
+        }
+
+        if (isLoading)
+        {
+            // Loading - blink yellow
+            _aiBlinkTimer += delta;
+            if (_aiBlinkTimer >= 0.4)
+            {
+                _aiBlinkTimer = 0;
+                _aiBlinkState = !_aiBlinkState;
+            }
+
+            if (_aiBlinkState)
+            {
+                _aiStatusDot.Modulate = new Color(1.0f, 0.9f, 0.3f); // Yellow
+                _aiStatusLabel.Modulate = new Color(0.9f, 0.8f, 0.4f);
+            }
+            else
+            {
+                _aiStatusDot.Modulate = new Color(0.5f, 0.45f, 0.15f); // Dim yellow
+                _aiStatusLabel.Modulate = new Color(0.5f, 0.45f, 0.3f);
+            }
+            return;
+        }
+
+        // Ready - check if generating content
+        var isGenerating = LlmServiceManager.IsGenerating;
+
+        if (isGenerating)
+        {
+            // Generating - blink green
+            _aiBlinkTimer += delta;
+            if (_aiBlinkTimer >= 0.3)
+            {
+                _aiBlinkTimer = 0;
+                _aiBlinkState = !_aiBlinkState;
+            }
+
+            if (_aiBlinkState)
+            {
+                _aiStatusDot.Modulate = new Color(0.3f, 1.0f, 0.5f); // Bright green
+                _aiStatusLabel.Modulate = new Color(0.4f, 0.9f, 0.5f);
+            }
+            else
+            {
+                _aiStatusDot.Modulate = new Color(0.15f, 0.5f, 0.25f); // Dim green
+                _aiStatusLabel.Modulate = new Color(0.3f, 0.5f, 0.35f);
+            }
+        }
+        else
+        {
+            // Ready and idle - solid green
+            _aiStatusDot.Modulate = new Color(0.3f, 0.9f, 0.4f);
+            _aiStatusLabel.Modulate = new Color(0.4f, 0.8f, 0.5f);
+        }
+    }
+
+    private void OnMutePressed()
+    {
+        MusicManager.Instance?.ToggleMute();
+        UpdateMuteButtonText();
+    }
+
+    private void UpdateMuteButtonText()
+    {
+        if (_muteButton == null) return;
+        var isMuted = MusicManager.Instance?.IsMuted ?? false;
+        _muteButton.Text = isMuted ? "🔇" : "🔊";
+    }
+
+    private void OnComposePressed()
+    {
+        // Create and show the compose dialog
+        var dialog = new ComposeEmailDialog();
+        dialog.EmailSent += OnComposeEmailSent;
+        dialog.DialogClosed += () => GD.Print("[CEODashboard] Compose dialog closed");
+
+        // Add to root so it overlays everything
+        GetTree().Root.AddChild(dialog);
+    }
+
+    private void OnComposeEmailSent(string subject, string body, string recipient)
+    {
+        GD.Print($"[CEODashboard] Email sent: {subject} to {recipient}");
+
+        // Generate a unique request ID for this freeform email
+        var requestId = $"freeform_{DateTime.Now.Ticks}";
+
+        // Queue the AI request with Low priority (doesn't block projects)
+        var context = new Dictionary<string, string>
+        {
+            { "recipient", recipient }
+        };
+
+        ProjectQueuePanel.QueueExternalAiRequest(
+            requestId,
+            subject,  // Title = subject
+            body,     // Description = CEO's message
+            AiPromptType.FreeformEmail,
+            AiPriority.Low,
+            aiResponse => OnFreeformAiResponse(requestId, subject, body, recipient, aiResponse),
+            context);
+    }
+
+    private void OnFreeformAiResponse(string requestId, string subject, string ceoMessage, string recipient, string aiResponse)
+    {
+        if (_gameManager?.CurrentState is null) return;
+
+        GD.Print($"[CEODashboard] Freeform AI response received: {aiResponse[..Math.Min(50, aiResponse.Length)]}...");
+
+        // Create the email thread with CEO's message and AI response
+        var threadId = $"freeform_{Guid.NewGuid():N}";
+        var turnNumber = _gameManager.CurrentState.Quarter.QuarterNumber;
+
+        // Determine responder archetype based on recipient
+        var responderArchetype = recipient switch
+        {
+            "Product Team" => SenderArchetype.PM,
+            "Engineering" => SenderArchetype.EngManager,
+            "Legal" => SenderArchetype.Legal,
+            "HR" => SenderArchetype.HR,
+            "Finance" => SenderArchetype.CFO,
+            "Marketing" => SenderArchetype.Marketing,
+            "The Board" => SenderArchetype.BoardMember,
+            _ => SenderArchetype.EngManager  // Default for "All Staff"
+        };
+
+        // CEO's outgoing message
+        var ceoMsg = new EmailMessage(
+            MessageId: $"{threadId}_ceo",
+            ThreadId: threadId,
+            Subject: subject,
+            Body: ceoMessage,
+            From: SenderArchetype.CEO,
+            To: responderArchetype,
+            Tone: EmailTone.Professional,
+            TurnNumber: turnNumber,
+            LinkedEventIds: Array.Empty<string>(),
+            IsRead: true);
+
+        // Response from the corporate drone
+        var responseBody = string.IsNullOrWhiteSpace(aiResponse)
+            ? GetFallbackFreeformResponse(subject)
+            : aiResponse;
+
+        var responseMsg = new EmailMessage(
+            MessageId: $"{threadId}_response",
+            ThreadId: threadId,
+            Subject: $"Re: {subject}",
+            Body: responseBody,
+            From: responderArchetype,
+            To: SenderArchetype.CEO,
+            Tone: EmailTone.Passive,
+            TurnNumber: turnNumber,
+            LinkedEventIds: Array.Empty<string>());
+
+        var thread = new EmailThread(
+            ThreadId: threadId,
+            Subject: subject,
+            OriginatingCardId: null,
+            CreatedOnTurn: turnNumber,
+            Messages: new[] { ceoMsg, responseMsg },
+            ThreadType: EmailThreadType.Fluff);
+
+        // Add to inbox
+        var newInbox = _gameManager.CurrentState.Inbox.WithThreadAdded(thread);
+        _gameManager.UpdateInbox(newInbox);
+
+        GD.Print($"[CEODashboard] Freeform email thread created: {threadId}");
+    }
+
+    private static string GetFallbackFreeformResponse(string subject)
+    {
+        var responses = new[]
+        {
+            "Per my last email, I believe we discussed this in Q2. Let me circle back with the team and provide a more comprehensive update by EOD Friday.",
+            "Great question! I've looped in the relevant stakeholders and we're currently at 73.2% alignment on this initiative. More details to follow.",
+            "Thanks for flagging this. We're seeing positive traction on our key metrics (NPS up 12 points, synergy index at 94.7%). Happy to schedule a deep-dive.",
+            "This is definitely on our radar. I've added it to the backlog and we'll prioritize based on our current OKR framework.",
+            "Appreciate you raising this. I'll take it offline with the cross-functional team and report back with actionable next steps."
+        };
+        return responses[Math.Abs(subject.GetHashCode()) % responses.Length];
     }
 
     private void TryTriggerRandomCrisis()
@@ -1647,6 +2037,9 @@ public partial class CEODashboard : Control
         if (_gameManager is null) return;
         var state = _gameManager.CurrentState;
         if (state is null) return;
+
+        // Don't trigger during first-run setup
+        if (FirstRunModelDialog.IsActive) return;
 
         // Don't trigger during Resolution or GameOver
         if (state.Quarter.Phase == GamePhase.Resolution) return;
@@ -1999,15 +2392,21 @@ public partial class CEODashboard : Control
     {
         if (_inboxContainer is null) return;
 
-        // Clear existing threads
-        foreach (var child in _inboxContainer.GetChildren())
+        // Clear existing threads - must RemoveChild before QueueFree to avoid overlap
+        foreach (var child in _inboxContainer.GetChildren().ToList())
         {
+            _inboxContainer.RemoveChild(child);
             child.QueueFree();
         }
 
         var inbox = state.Inbox;
-        // All threads - high priority unread pop to top, then normal ordering
+
+        // Get pending thread IDs (emails waiting for AI content)
+        var pendingThreadIds = _projectQueuePanel?.PendingThreadIds ?? new HashSet<string>();
+
+        // All threads - filter out pending, then sort
         var threads = inbox.AllThreadsOrdered
+            .Where(t => !pendingThreadIds.Contains(t.ThreadId))  // Hide pending emails
             .OrderByDescending(t => t.IsHighPriority && !t.IsFullyRead)  // High priority unread first (response required)
             .ThenByDescending(t => !t.IsFullyRead)  // Then other unread
             .ThenByDescending(t => t.SequenceNumber)  // Then by most recent activity
@@ -2030,63 +2429,181 @@ public partial class CEODashboard : Control
             emptyLabel.AddThemeFontSizeOverride("font_size", 10);
             emptyLabel.Modulate = new Color(0.4f, 0.4f, 0.45f);
             _inboxContainer.AddChild(emptyLabel);
-            return;
+            // Don't return - still show recycle bin if there's trash
         }
 
-        // Show unread count if any
-        if (inbox.UnreadThreadCount > 0)
+        // Only process threads if we have any
+        if (threads.Count > 0)
         {
-            var unreadLabel = new Label
+            // Show unread count if any
+            if (inbox.UnreadThreadCount > 0)
             {
-                Text = $"{inbox.UnreadThreadCount} unread"
-            };
-            unreadLabel.AddThemeFontSizeOverride("font_size", 9);
-            unreadLabel.Modulate = new Color(0.9f, 0.6f, 0.3f);
-            _inboxContainer.AddChild(unreadLabel);
-        }
+                var unreadLabel = new Label
+                {
+                    Text = $"{inbox.UnreadThreadCount} unread"
+                };
+                unreadLabel.AddThemeFontSizeOverride("font_size", 9);
+                unreadLabel.Modulate = new Color(0.9f, 0.6f, 0.3f);
+                _inboxContainer.AddChild(unreadLabel);
+            }
 
-        // Auto-select first high-priority unread email (only if nothing selected)
-        // Don't steal focus from current email when crisis triggers
-        var priorityThread = threads.FirstOrDefault(t => t.IsHighPriority && !t.IsFullyRead);
-        if (priorityThread is not null && _selectedThread is null)
-        {
-            // ShowEmailThread calls UpdateInbox at the end, so return to avoid double-rendering
-            ShowEmailThread(priorityThread);
-            return;
-        }
-        else if (_selectedThread is not null && !_isShowingEmailThread)
-        {
-            // Always refresh selected thread to ensure crisis response panels update correctly
-            // This handles cases where CurrentCrisis changes but the thread itself doesn't
-            // Only do this if we're not already in ShowEmailThread (to avoid recursion)
-            var updatedThread = threads.FirstOrDefault(t => t.ThreadId == _selectedThread.ThreadId);
-            if (updatedThread is not null)
+            // Auto-select first high-priority unread email (only if nothing selected)
+            // Don't steal focus from current email when crisis triggers
+            var priorityThread = threads.FirstOrDefault(t => t.IsHighPriority && !t.IsFullyRead);
+            if (priorityThread is not null && _selectedThread is null)
             {
-                _selectedThread = updatedThread;
-                ShowEmailThread(updatedThread);
+                // ShowEmailThread calls UpdateInbox at the end, so return to avoid double-rendering
+                ShowEmailThread(priorityThread);
                 return;
+            }
+            else if (_selectedThread is not null && !_isShowingEmailThread)
+            {
+                // Always refresh selected thread to ensure crisis response panels update correctly
+                // This handles cases where CurrentCrisis changes but the thread itself doesn't
+                // Only do this if we're not already in ShowEmailThread (to avoid recursion)
+                var updatedThread = threads.FirstOrDefault(t => t.ThreadId == _selectedThread.ThreadId);
+                if (updatedThread is not null)
+                {
+                    _selectedThread = updatedThread;
+                    ShowEmailThread(updatedThread);
+                    return;
+                }
+            }
+
+            var delay = 0.0f;
+            foreach (var thread in threads)
+            {
+                var threadPanel = CreateEmailThreadPanel(thread);
+                _inboxContainer.AddChild(threadPanel);
+
+                // Staggered fade-in animation for email threads
+                threadPanel.Modulate = new Color(1, 1, 1, 0);
+                var panelCopy = threadPanel;
+                var delayTime = delay;
+                GetTree().CreateTimer(delayTime).Timeout += () =>
+                {
+                    if (IsInstanceValid(panelCopy))
+                    {
+                        AnimateFadeIn(panelCopy, 0.2f, slideFromRight: true);
+                    }
+                };
+                delay += 0.05f; // Stagger each thread by 50ms
             }
         }
 
-        var delay = 0.0f;
-        foreach (var thread in threads)
+        // Recycle bin section (if there are trashed threads)
+        if (inbox.TrashCount > 0)
         {
-            var threadPanel = CreateEmailThreadPanel(thread);
-            _inboxContainer.AddChild(threadPanel);
+            // Separator
+            var trashSeparator = new HSeparator();
+            trashSeparator.Modulate = new Color(0.5f, 0.5f, 0.5f, 0.6f);
+            _inboxContainer.AddChild(trashSeparator);
 
-            // Staggered fade-in animation for email threads
-            threadPanel.Modulate = new Color(1, 1, 1, 0);
-            var panelCopy = threadPanel;
-            var delayTime = delay;
-            GetTree().CreateTimer(delayTime).Timeout += () =>
+            // Trash header - clickable to expand/collapse
+            var trashHeader = new HBoxContainer();
+            trashHeader.AddThemeConstantOverride("separation", 6);
+            _inboxContainer.AddChild(trashHeader);
+
+            // Expand/collapse chevron
+            var chevronBtn = new Button
             {
-                if (IsInstanceValid(panelCopy))
-                {
-                    AnimateFadeIn(panelCopy, 0.2f, slideFromRight: true);
-                }
+                Text = _trashExpanded ? "▼" : "▶",
+                FocusMode = Control.FocusModeEnum.None,
+                CustomMinimumSize = new Vector2(20, 20)
             };
-            delay += 0.05f; // Stagger each thread by 50ms
+            chevronBtn.AddThemeFontSizeOverride("font_size", 9);
+            var chevronStyle = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0) };
+            chevronBtn.AddThemeStyleboxOverride("normal", chevronStyle);
+            chevronBtn.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = new Color(0.2f, 0.2f, 0.25f, 0.5f) });
+            chevronBtn.Modulate = new Color(0.7f, 0.7f, 0.75f);
+            chevronBtn.Pressed += () =>
+            {
+                _trashExpanded = !_trashExpanded;
+                if (_gameManager?.CurrentState != null)
+                    UpdateInbox(_gameManager.CurrentState);
+            };
+            trashHeader.AddChild(chevronBtn);
+
+            var trashIcon = new Label { Text = "🗑" };
+            trashIcon.AddThemeFontSizeOverride("font_size", 11);
+            trashIcon.Modulate = new Color(0.85f, 0.85f, 0.85f);
+            trashHeader.AddChild(trashIcon);
+
+            var trashLabel = new Label { Text = $"Recycle Bin ({inbox.TrashCount})" };
+            trashLabel.AddThemeFontSizeOverride("font_size", 10);
+            trashLabel.Modulate = new Color(0.9f, 0.9f, 0.9f);
+            trashHeader.AddChild(trashLabel);
+
+            var trashSpacer = new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+            trashHeader.AddChild(trashSpacer);
+
+            // Empty trash button (only show when expanded)
+            if (_trashExpanded)
+            {
+                var emptyBtn = new Button { Text = "Empty", FocusMode = Control.FocusModeEnum.None };
+                emptyBtn.AddThemeFontSizeOverride("font_size", 9);
+                var emptyBtnStyle = new StyleBoxFlat
+                {
+                    BgColor = new Color(0.15f, 0.1f, 0.1f),
+                    ContentMarginLeft = 8,
+                    ContentMarginRight = 8,
+                    ContentMarginTop = 2,
+                    ContentMarginBottom = 2
+                };
+                emptyBtnStyle.CornerRadiusTopLeft = 3;
+                emptyBtnStyle.CornerRadiusTopRight = 3;
+                emptyBtnStyle.CornerRadiusBottomLeft = 3;
+                emptyBtnStyle.CornerRadiusBottomRight = 3;
+                emptyBtn.AddThemeStyleboxOverride("normal", emptyBtnStyle);
+                emptyBtn.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = new Color(0.35f, 0.15f, 0.15f) });
+                emptyBtn.Modulate = new Color(0.95f, 0.8f, 0.8f);
+                emptyBtn.Pressed += () => _gameManager?.EmptyTrash();
+                trashHeader.AddChild(emptyBtn);
+            }
+
+            // Show trashed threads only when expanded
+            if (_trashExpanded)
+            {
+                foreach (var trashedThread in inbox.TrashThreads.OrderByDescending(t => t.SequenceNumber))
+                {
+                    var trashRow = new HBoxContainer();
+                    trashRow.AddThemeConstantOverride("separation", 6);
+                    _inboxContainer.AddChild(trashRow);
+
+                    // Indent for hierarchy
+                    var indent = new Control { CustomMinimumSize = new Vector2(20, 0) };
+                    trashRow.AddChild(indent);
+
+                    var trashSubject = new Label
+                    {
+                        Text = TruncateSubject(trashedThread.Subject, 28),
+                        ClipText = true,
+                        SizeFlagsHorizontal = SizeFlags.ExpandFill
+                    };
+                    trashSubject.AddThemeFontSizeOverride("font_size", 9);
+                    trashSubject.Modulate = new Color(0.75f, 0.75f, 0.78f);
+                    trashRow.AddChild(trashSubject);
+
+                    // Restore button
+                    var restoreBtn = new Button { Text = "↩", FocusMode = Control.FocusModeEnum.None };
+                    restoreBtn.AddThemeFontSizeOverride("font_size", 10);
+                    var restoreBtnStyle = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0) };
+                    restoreBtn.AddThemeStyleboxOverride("normal", restoreBtnStyle);
+                    restoreBtn.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = new Color(0.2f, 0.3f, 0.2f, 0.5f) });
+                    restoreBtn.Modulate = new Color(0.8f, 0.9f, 0.8f);
+                    var threadIdToRestore = trashedThread.ThreadId;
+                    restoreBtn.Pressed += () => _gameManager?.RestoreThread(threadIdToRestore);
+                    trashRow.AddChild(restoreBtn);
+                }
+            }
         }
+    }
+
+    private static string TruncateSubject(string subject, int maxLength)
+    {
+        if (string.IsNullOrEmpty(subject)) return "";
+        if (subject.Length <= maxLength) return subject;
+        return subject[..(maxLength - 3)] + "...";
     }
 
     private Control CreateEmailThreadPanel(EmailThread thread)
@@ -2269,6 +2786,36 @@ public partial class CEODashboard : Control
         // Spacer
         var spacer = new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
         headerRow.AddChild(spacer);
+
+        // Delete button (trash icon) - only for non-crisis threads
+        if (thread.ThreadType != EmailThreadType.Crisis || thread.IsFullyRead)
+        {
+            var deleteBtn = new Button
+            {
+                Text = "🗑",
+                CustomMinimumSize = new Vector2(24, 24),
+                FocusMode = Control.FocusModeEnum.None
+            };
+            deleteBtn.AddThemeFontSizeOverride("font_size", 10);
+
+            var deleteBtnStyle = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0) };
+            deleteBtn.AddThemeStyleboxOverride("normal", deleteBtnStyle);
+            deleteBtn.AddThemeStyleboxOverride("hover", new StyleBoxFlat { BgColor = new Color(0.4f, 0.2f, 0.2f, 0.6f) });
+            deleteBtn.AddThemeStyleboxOverride("pressed", new StyleBoxFlat { BgColor = new Color(0.5f, 0.2f, 0.2f, 0.8f) });
+            deleteBtn.Modulate = new Color(0.85f, 0.7f, 0.7f); // Light red for visibility
+
+            var threadIdCopy = thread.ThreadId;
+            deleteBtn.Pressed += () =>
+            {
+                _gameManager?.TrashThread(threadIdCopy);
+                if (_selectedThread?.ThreadId == threadIdCopy)
+                {
+                    _selectedThread = null;
+                    ClearEmailDetail();
+                }
+            };
+            headerRow.AddChild(deleteBtn);
+        }
 
         // Unread indicator with pulsing animation
         if (isUnread)
@@ -2458,6 +3005,14 @@ public partial class CEODashboard : Control
             _emailDetailContainer.AddChild(responsePanel);
         }
 
+        // For project/crisis resolution emails, show pending effects panel if player needs to acknowledge
+        if ((thread.ThreadType == EmailThreadType.CardResult || thread.ThreadType == EmailThreadType.Notification)
+            && thread.PendingEffects is not null)
+        {
+            var effectsPanel = CreateProjectEffectsPanel(thread, accentColor);
+            _emailDetailContainer.AddChild(effectsPanel);
+        }
+
         // Mark thread as read and refresh inbox list
         if (!thread.IsFullyRead)
         {
@@ -2635,6 +3190,201 @@ public partial class CEODashboard : Control
         return parts.Count > 0 ? string.Join(", ", parts) : "No change";
     }
 
+    private Control CreateProjectEffectsPanel(EmailThread thread, Color accentColor)
+    {
+        var effects = thread.PendingEffects!;
+        var isAccepted = thread.EffectsAccepted;
+
+        var panel = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var style = new StyleBoxFlat
+        {
+            BgColor = isAccepted
+                ? new Color(0.06f, 0.1f, 0.08f)  // Darker green when accepted
+                : new Color(0.1f, 0.1f, 0.15f),
+            ContentMarginLeft = 16,
+            ContentMarginRight = 16,
+            ContentMarginTop = 14,
+            ContentMarginBottom = 14
+        };
+        style.BorderWidthTop = 2;
+        style.BorderColor = isAccepted ? new Color(0.3f, 0.6f, 0.4f) : accentColor;
+        style.CornerRadiusTopLeft = 6;
+        style.CornerRadiusTopRight = 6;
+        style.CornerRadiusBottomLeft = 6;
+        style.CornerRadiusBottomRight = 6;
+        panel.AddThemeStyleboxOverride("panel", style);
+
+        var vbox = new VBoxContainer();
+        vbox.AddThemeConstantOverride("separation", 10);
+        panel.AddChild(vbox);
+
+        // Header with AI disclaimer
+        var headerHbox = new HBoxContainer();
+        headerHbox.AddThemeConstantOverride("separation", 8);
+        vbox.AddChild(headerHbox);
+
+        var aiIcon = new Label { Text = "🤖" };
+        aiIcon.AddThemeFontSizeOverride("font_size", 14);
+        headerHbox.AddChild(aiIcon);
+
+        var headerLabel = new Label
+        {
+            Text = "PROJECT IMPACT ANALYSIS",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        headerLabel.AddThemeFontSizeOverride("font_size", 11);
+        headerLabel.Modulate = isAccepted ? new Color(0.5f, 0.8f, 0.6f) : accentColor;
+        headerHbox.AddChild(headerLabel);
+
+        // Outcome tier
+        var outcomeLabel = new Label
+        {
+            Text = $"Outcome: {effects.OutcomeText}",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        outcomeLabel.AddThemeFontSizeOverride("font_size", 12);
+        outcomeLabel.Modulate = effects.OutcomeText switch
+        {
+            "Good" => new Color(0.4f, 0.9f, 0.5f),
+            "Bad" => new Color(0.9f, 0.4f, 0.4f),
+            _ => new Color(0.7f, 0.7f, 0.75f)
+        };
+        vbox.AddChild(outcomeLabel);
+
+        // Effects grid
+        var effectsGrid = new GridContainer { Columns = 2 };
+        effectsGrid.AddThemeConstantOverride("h_separation", 20);
+        effectsGrid.AddThemeConstantOverride("v_separation", 4);
+        vbox.AddChild(effectsGrid);
+
+        // Meter changes
+        foreach (var (meter, delta) in effects.MeterChanges)
+        {
+            var meterName = meter switch
+            {
+                Meter.Delivery => "Delivery",
+                Meter.Morale => "Morale",
+                Meter.Governance => "Governance",
+                Meter.Alignment => "Alignment",
+                Meter.Runway => "Runway",
+                _ => meter.ToString()
+            };
+
+            var nameLabel = new Label { Text = meterName };
+            nameLabel.AddThemeFontSizeOverride("font_size", 12);
+            nameLabel.Modulate = new Color(0.7f, 0.7f, 0.75f);
+            effectsGrid.AddChild(nameLabel);
+
+            var sign = delta >= 0 ? "+" : "";
+            var valueLabel = new Label { Text = $"{sign}{delta}" };
+            valueLabel.AddThemeFontSizeOverride("font_size", 12);
+            valueLabel.Modulate = delta >= 0
+                ? new Color(0.4f, 0.9f, 0.5f)
+                : new Color(0.9f, 0.4f, 0.4f);
+            effectsGrid.AddChild(valueLabel);
+        }
+
+        // Profit delta
+        if (effects.ProfitDelta != 0)
+        {
+            var profitNameLabel = new Label { Text = "Profit" };
+            profitNameLabel.AddThemeFontSizeOverride("font_size", 12);
+            profitNameLabel.Modulate = new Color(0.7f, 0.7f, 0.75f);
+            effectsGrid.AddChild(profitNameLabel);
+
+            var sign = effects.ProfitDelta >= 0 ? "+" : "";
+            var profitValueLabel = new Label { Text = $"{sign}${effects.ProfitDelta}M" };
+            profitValueLabel.AddThemeFontSizeOverride("font_size", 12);
+            profitValueLabel.Modulate = effects.ProfitDelta >= 0
+                ? new Color(0.5f, 0.9f, 0.6f)
+                : new Color(0.9f, 0.5f, 0.4f);
+            effectsGrid.AddChild(profitValueLabel);
+        }
+
+        // Evil score delta (shown as "Corporate Impact")
+        if (effects.EvilScoreDelta != 0)
+        {
+            var evilNameLabel = new Label { Text = "Corporate Impact" };
+            evilNameLabel.AddThemeFontSizeOverride("font_size", 12);
+            evilNameLabel.Modulate = new Color(0.7f, 0.7f, 0.75f);
+            effectsGrid.AddChild(evilNameLabel);
+
+            var evilValueLabel = new Label { Text = $"+{effects.EvilScoreDelta}" };
+            evilValueLabel.AddThemeFontSizeOverride("font_size", 12);
+            evilValueLabel.Modulate = new Color(0.8f, 0.4f, 0.8f);  // Purple for evil
+            effectsGrid.AddChild(evilValueLabel);
+        }
+
+        // AI disclaimer
+        var disclaimerLabel = new Label
+        {
+            Text = "Generated by InertiCorp AI Analytics™",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        disclaimerLabel.AddThemeFontSizeOverride("font_size", 9);
+        disclaimerLabel.Modulate = new Color(0.4f, 0.4f, 0.45f);
+        vbox.AddChild(disclaimerLabel);
+
+        // Accept button or accepted status
+        if (isAccepted)
+        {
+            var acceptedLabel = new Label
+            {
+                Text = "✓ Results Acknowledged",
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            acceptedLabel.AddThemeFontSizeOverride("font_size", 12);
+            acceptedLabel.Modulate = new Color(0.4f, 0.8f, 0.5f);
+            vbox.AddChild(acceptedLabel);
+        }
+        else
+        {
+            var acceptBtn = new Button
+            {
+                Text = "Accept Result",
+                SizeFlagsHorizontal = SizeFlags.ShrinkCenter
+            };
+            acceptBtn.AddThemeFontSizeOverride("font_size", 13);
+
+            var btnStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(0.2f, 0.4f, 0.6f),
+                ContentMarginLeft = 24,
+                ContentMarginRight = 24,
+                ContentMarginTop = 10,
+                ContentMarginBottom = 10
+            };
+            btnStyle.CornerRadiusTopLeft = 4;
+            btnStyle.CornerRadiusTopRight = 4;
+            btnStyle.CornerRadiusBottomLeft = 4;
+            btnStyle.CornerRadiusBottomRight = 4;
+            acceptBtn.AddThemeStyleboxOverride("normal", btnStyle);
+
+            var hoverStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(0.25f, 0.5f, 0.7f),
+                ContentMarginLeft = 24,
+                ContentMarginRight = 24,
+                ContentMarginTop = 10,
+                ContentMarginBottom = 10
+            };
+            hoverStyle.CornerRadiusTopLeft = 4;
+            hoverStyle.CornerRadiusTopRight = 4;
+            hoverStyle.CornerRadiusBottomLeft = 4;
+            hoverStyle.CornerRadiusBottomRight = 4;
+            acceptBtn.AddThemeStyleboxOverride("hover", hoverStyle);
+
+            var threadId = thread.ThreadId;
+            acceptBtn.Pressed += () =>
+            {
+                _gameManager?.AcceptProjectEffects(threadId);
+            };
+            vbox.AddChild(acceptBtn);
+        }
+
+        return panel;
+    }
+
     private Control CreateEmailMessagePanel(EmailMessage msg)
     {
         var isFromPlayer = msg.IsFromPlayer;
@@ -2682,10 +3432,18 @@ public partial class CEODashboard : Control
         turnLabel.Modulate = new Color(0.45f, 0.45f, 0.5f);
         headerRow.AddChild(turnLabel);
 
-        // Body - using RichTextLabel for better text handling
+        // Body with signature block for non-player messages
+        var bodyText = msg.Body;
+        if (!isFromPlayer)
+        {
+            // Append formal signature block from company directory
+            var signature = CompanyDirectory.GenerateSignature(msg.From, msg.MessageId, msg.Tone);
+            bodyText = $"{bodyText}\n\n---\n{signature}";
+        }
+
         var bodyLabel = new RichTextLabel
         {
-            Text = msg.Body,
+            Text = bodyText,
             BbcodeEnabled = false,
             FitContent = true,
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
@@ -2770,119 +3528,22 @@ public partial class CEODashboard : Control
                 break;
 
             case GamePhase.Crisis:
+                // Crisis phase now shows same UI as Resolution but with blocked button
+                // Crises are handled as inbox items - no separate "crisis phase" UI
                 if (state.CurrentCrisis is not null)
                 {
-                    _actionHeader.Text = $"SITUATION: {state.CurrentCrisis.Title}";
-                    _actionDescription.Text = "[color=#ff6666]A situation requires your attention.[/color]\n\n" +
-                        "Check the urgent message in your inbox and select a response.";
+                    _actionHeader.Text = "⚠ SITUATION REQUIRES ATTENTION";
+                    _actionDescription.Text = "[center][color=#ff8080]There's an urgent situation in your inbox that requires a response before the board review.[/color]\n\n" +
+                        "Check your inbox and respond to the highlighted situation.[/center]";
 
-                    // Check if crisis email exists in inbox (check both IsCrisis flag and OriginatingCardId match)
-                    var crisisThread = state.Inbox.Threads.FirstOrDefault(t => t.IsCrisis && t.OriginatingCardId == state.CurrentCrisis.EventId) ??
-                                       state.Inbox.Threads.FirstOrDefault(t => t.IsCrisis);
-                    if (crisisThread is null)
-                    {
-                        // Crisis exists but no email - something went wrong, offer skip button
-                        var skipLabel = new Label
-                        {
-                            Text = "Crisis email not found - click below to continue",
-                            AutowrapMode = TextServer.AutowrapMode.Word
-                        };
-                        skipLabel.AddThemeFontSizeOverride("font_size", 10);
-                        skipLabel.Modulate = new Color(1.0f, 0.6f, 0.4f);
-                        _choicesContainer.AddChild(skipLabel);
-
-                        var skipBtn = CreateActionButton("▶ CONTINUE", new Color(0.9f, 0.6f, 0.3f));
-                        skipBtn.Pressed += () => _gameManager?.ForceAdvanceCrisis();
-                        _choicesContainer.AddChild(skipBtn);
-                    }
-                    else
-                    {
-                        // Prominent ACTION REQUIRED banner
-                        var actionBanner = new PanelContainer();
-                        var bannerStyle = new StyleBoxFlat
-                        {
-                            BgColor = new Color(0.4f, 0.15f, 0.1f),
-                            ContentMarginLeft = 12,
-                            ContentMarginRight = 12,
-                            ContentMarginTop = 10,
-                            ContentMarginBottom = 10
-                        };
-                        bannerStyle.BorderWidthTop = 2;
-                        bannerStyle.BorderWidthBottom = 2;
-                        bannerStyle.BorderWidthLeft = 2;
-                        bannerStyle.BorderWidthRight = 2;
-                        bannerStyle.BorderColor = new Color(1.0f, 0.4f, 0.3f);
-                        bannerStyle.CornerRadiusTopLeft = 6;
-                        bannerStyle.CornerRadiusTopRight = 6;
-                        bannerStyle.CornerRadiusBottomLeft = 6;
-                        bannerStyle.CornerRadiusBottomRight = 6;
-                        actionBanner.AddThemeStyleboxOverride("panel", bannerStyle);
-                        _choicesContainer.AddChild(actionBanner);
-
-                        var bannerContent = new VBoxContainer();
-                        bannerContent.AddThemeConstantOverride("separation", 6);
-                        actionBanner.AddChild(bannerContent);
-
-                        var actionLabel = new Label { Text = "ACTION REQUIRED" };
-                        actionLabel.AddThemeFontSizeOverride("font_size", 16);
-                        actionLabel.Modulate = new Color(1.0f, 0.5f, 0.4f);
-                        actionLabel.HorizontalAlignment = HorizontalAlignment.Center;
-                        bannerContent.AddChild(actionLabel);
-
-                        var instructionLabel = new Label
-                        {
-                            Text = "You have an urgent email that requires a response.\nClick the highlighted email in your inbox to read it,\nthen select one of the response options.",
-                            AutowrapMode = TextServer.AutowrapMode.Word,
-                            HorizontalAlignment = HorizontalAlignment.Center
-                        };
-                        instructionLabel.AddThemeFontSizeOverride("font_size", 11);
-                        instructionLabel.Modulate = new Color(0.9f, 0.85f, 0.8f);
-                        bannerContent.AddChild(instructionLabel);
-
-                        // View email button
-                        var viewEmailBtn = new Button
-                        {
-                            Text = "📧 VIEW URGENT EMAIL",
-                            CustomMinimumSize = new Vector2(0, 36)
-                        };
-                        viewEmailBtn.AddThemeFontSizeOverride("font_size", 14);
-                        var threadToShow = crisisThread;
-                        viewEmailBtn.Pressed += () => ShowEmailThread(threadToShow);
-                        bannerContent.AddChild(viewEmailBtn);
-
-                        _choicesContainer.AddChild(new HSeparator());
-
-                        // Less prominent skip option with clearer text
-                        var skipHint = new Label
-                        {
-                            Text = "Can't decide? Let the board choose for you:",
-                            AutowrapMode = TextServer.AutowrapMode.Word
-                        };
-                        skipHint.AddThemeFontSizeOverride("font_size", 9);
-                        skipHint.Modulate = new Color(0.5f, 0.5f, 0.55f);
-                        _choicesContainer.AddChild(skipHint);
-
-                        var fallbackBtn = new Button
-                        {
-                            Text = "Let Board Decide (Random)",
-                            TooltipText = "The board will choose a response for you.\nNot recommended - you lose control of the outcome.",
-                            CustomMinimumSize = new Vector2(0, 28)
-                        };
-                        fallbackBtn.AddThemeFontSizeOverride("font_size", 10);
-                        fallbackBtn.Modulate = new Color(0.6f, 0.6f, 0.6f);
-                        fallbackBtn.Pressed += () => _gameManager?.ForceAdvanceCrisis();
-                        _choicesContainer.AddChild(fallbackBtn);
-                    }
+                    var blockedCrisisBtn = CreateActionButton("⚠ RESOLVE SITUATION FIRST", new Color(0.5f, 0.5f, 0.5f));
+                    blockedCrisisBtn.Disabled = true;
+                    _choicesContainer.AddChild(blockedCrisisBtn);
                 }
                 else
                 {
-                    _actionHeader.Text = "NO SITUATIONS";
-                    _actionDescription.Text = "No situations requiring attention this quarter.";
-
-                    // No crisis - add button to continue
-                    var noCrisisBtn = CreateActionButton("▶ CONTINUE TO RESOLUTION", Colors.Cyan);
-                    noCrisisBtn.Pressed += () => _gameManager?.ForceAdvanceCrisis();
-                    _choicesContainer.AddChild(noCrisisBtn);
+                    // No crisis - auto-advance to Resolution
+                    _gameManager?.ForceAdvanceCrisis();
                 }
                 break;
 
@@ -2950,6 +3611,7 @@ public partial class CEODashboard : Control
 
                 // Check for pending crises that must be resolved first
                 var hasPendingCrisis = _gameManager?.HasPendingCrisis ?? false;
+                var hasActiveProjects = _projectQueuePanel?.HasActiveProjects ?? false;
 
                 // End phase button with restraint bonus preview
                 var endText = restraintBonus > 0
@@ -2971,6 +3633,22 @@ public partial class CEODashboard : Control
                     warningLabel.AddThemeFontSizeOverride("font_size", 10);
                     warningLabel.Modulate = new Color(1.0f, 0.6f, 0.4f);
                     _choicesContainer.AddChild(warningLabel);
+                }
+                else if (hasActiveProjects)
+                {
+                    // Show blocked button - projects still processing
+                    var blockedBtn = CreateActionButton("⏳ PROJECTS IN PROGRESS", new Color(0.5f, 0.6f, 0.5f));
+                    blockedBtn.Disabled = true;
+                    _choicesContainer.AddChild(blockedBtn);
+
+                    var waitLabel = new Label
+                    {
+                        Text = "Wait for active projects to complete before ending the phase.",
+                        AutowrapMode = TextServer.AutowrapMode.Word
+                    };
+                    waitLabel.AddThemeFontSizeOverride("font_size", 10);
+                    waitLabel.Modulate = new Color(0.6f, 0.7f, 0.6f);
+                    _choicesContainer.AddChild(waitLabel);
                 }
                 else
                 {
@@ -3068,7 +3746,21 @@ public partial class CEODashboard : Control
                 break;
 
             case GamePhase.Resolution:
-                if (state.CEO.CanRetire)
+                // Check for pending crisis that must be resolved first
+                var hasPendingResolutionCrisis = state.CurrentCrisis is not null;
+
+                if (hasPendingResolutionCrisis)
+                {
+                    // Block until crisis is resolved via inbox
+                    _actionHeader.Text = "⚠ SITUATION REQUIRES ATTENTION";
+                    _actionDescription.Text = "[center][color=#ff8080]There's an urgent situation in your inbox that requires a response before the board review.[/color]\n\n" +
+                        "Check your inbox and respond to the highlighted situation.[/center]";
+
+                    var blockedReviewBtn = CreateActionButton("⚠ RESOLVE SITUATION FIRST", new Color(0.5f, 0.5f, 0.5f));
+                    blockedReviewBtn.Disabled = true;
+                    _choicesContainer.AddChild(blockedReviewBtn);
+                }
+                else if (state.CEO.CanRetire)
                 {
                     // Show retirement option
                     _actionHeader.Text = "RETIREMENT AVAILABLE";
@@ -3298,6 +3990,7 @@ public partial class CEODashboard : Control
         var canPlay = isPlayPhase && canAfford && remaining > 0;
         var targetAmount = BoardDirective.ProfitIncrease.GetRequiredAmount(state.CEO.BoardPressureLevel);
         var delivery = state.Org.Delivery;
+
         foreach (var card in state.Hand.Cards)
         {
             var cardPanel = CreateCardPanel(card, canPlay, state.Org, targetAmount, delivery);
@@ -3491,18 +4184,35 @@ public partial class CEODashboard : Control
     {
         if (_gameManager is null) return;
 
-        // Play the card immediately (endPhase = false so player can continue)
-        _gameManager.PlayCard(cardId, endPhaseAfter: false);
+        var state = _gameManager.CurrentState;
+        var card = state?.Hand.Cards.FirstOrDefault(c => c.CardId == cardId);
 
-        // Track total cards played for reports
-        _totalCardsPlayed++;
+        // If we can add to project queue, the card is played immediately there
+        // but the email is hidden until AI content is generated
+        if (card != null && _projectQueuePanel != null && !_projectQueuePanel.IsFull)
+        {
+            // TryAddProject plays the card and starts AI generation
+            _projectQueuePanel.TryAddProject(card);
+
+            // Track total cards played for reports
+            _totalCardsPlayed++;
+
+            // Force UI refresh (card is removed from hand)
+            UpdateDashboard();
+        }
+        else
+        {
+            // No queue available or full - play immediately as before
+            _gameManager.PlayCard(cardId, endPhaseAfter: false);
+            _totalCardsPlayed++;
+        }
     }
 
     private static string GetPhaseDisplayName(GamePhase phase) => phase switch
     {
         GamePhase.BoardDemand => "BOARD BRIEFING",
         GamePhase.PlayCards => "PROJECT SELECTION",
-        GamePhase.Crisis => "SITUATION",
+        GamePhase.Crisis => "BOARD REVIEW", // Crisis handled inline with Resolution
         GamePhase.Resolution => "BOARD REVIEW",
         _ => phase.ToString().ToUpper()
     };

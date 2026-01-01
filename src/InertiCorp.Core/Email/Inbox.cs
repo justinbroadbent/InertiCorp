@@ -5,14 +5,27 @@ namespace InertiCorp.Core.Email;
 /// Each thread represents an Ask (from CEO) + Reply(s) (from NPCs).
 /// Threads serve as the canonical event log for the game.
 /// </summary>
-public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequenceNumber = 1)
+public sealed record Inbox(
+    IReadOnlyList<EmailThread> Threads,
+    long NextSequenceNumber = 1,
+    IReadOnlyList<EmailThread>? Trash = null)
 {
     public const int MaxDisplayCount = 5;
 
     /// <summary>
+    /// Trashed threads (recycle bin).
+    /// </summary>
+    public IReadOnlyList<EmailThread> TrashThreads => Trash ?? Array.Empty<EmailThread>();
+
+    /// <summary>
+    /// Number of threads in trash.
+    /// </summary>
+    public int TrashCount => TrashThreads.Count;
+
+    /// <summary>
     /// Creates an empty inbox.
     /// </summary>
-    public static Inbox Empty => new(Array.Empty<EmailThread>(), 1);
+    public static Inbox Empty => new(Array.Empty<EmailThread>(), 1, Array.Empty<EmailThread>());
 
     /// <summary>
     /// Total number of threads.
@@ -86,7 +99,7 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
     public Inbox WithThreadAdded(EmailThread thread)
     {
         var threadWithSeq = thread with { SequenceNumber = NextSequenceNumber };
-        return new Inbox(Threads.Append(threadWithSeq).ToList(), NextSequenceNumber + 1);
+        return new Inbox(Threads.Append(threadWithSeq).ToList(), NextSequenceNumber + 1, Trash);
     }
 
     /// <summary>
@@ -99,7 +112,7 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
         return new Inbox(Threads.Select(t =>
             t.ThreadId == threadId
                 ? t.WithFollowUp(followUp) with { SequenceNumber = NextSequenceNumber }
-                : t).ToList(), NextSequenceNumber + 1);
+                : t).ToList(), NextSequenceNumber + 1, Trash);
     }
 
     /// <summary>
@@ -110,7 +123,7 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
         return new Inbox(Threads.Select(t =>
             t.ThreadId == threadId
                 ? t with { Messages = t.Messages.Select(m => m.WithRead()).ToList() }
-                : t).ToList(), NextSequenceNumber);
+                : t).ToList(), NextSequenceNumber, Trash);
     }
 
     /// <summary>
@@ -122,7 +135,45 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
         var originalSeq = Threads.FirstOrDefault(t => t.ThreadId == threadId)?.SequenceNumber ?? replacement.SequenceNumber;
         var replacementWithSeq = replacement with { SequenceNumber = originalSeq };
         return new Inbox(Threads.Select(t =>
-            t.ThreadId == threadId ? replacementWithSeq : t).ToList(), NextSequenceNumber);
+            t.ThreadId == threadId ? replacementWithSeq : t).ToList(), NextSequenceNumber, Trash);
+    }
+
+    /// <summary>
+    /// Returns a new inbox with a thread moved to trash.
+    /// </summary>
+    public Inbox WithThreadTrashed(string threadId)
+    {
+        var thread = Threads.FirstOrDefault(t => t.ThreadId == threadId);
+        if (thread == null) return this;
+
+        return new Inbox(
+            Threads.Where(t => t.ThreadId != threadId).ToList(),
+            NextSequenceNumber,
+            TrashThreads.Append(thread).ToList());
+    }
+
+    /// <summary>
+    /// Returns a new inbox with a thread restored from trash.
+    /// </summary>
+    public Inbox WithThreadRestored(string threadId)
+    {
+        var thread = TrashThreads.FirstOrDefault(t => t.ThreadId == threadId);
+        if (thread == null) return this;
+
+        // Restore with new sequence number so it appears at top
+        var restoredThread = thread with { SequenceNumber = NextSequenceNumber };
+        return new Inbox(
+            Threads.Append(restoredThread).ToList(),
+            NextSequenceNumber + 1,
+            TrashThreads.Where(t => t.ThreadId != threadId).ToList());
+    }
+
+    /// <summary>
+    /// Returns a new inbox with trash emptied.
+    /// </summary>
+    public Inbox WithTrashEmptied()
+    {
+        return new Inbox(Threads, NextSequenceNumber, Array.Empty<EmailThread>());
     }
 
     /// <summary>
@@ -134,7 +185,7 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
         return new Inbox(Threads.Select(t =>
             t.ThreadId == threadId
                 ? t with { ThreadType = EmailThreadType.Crisis, OriginatingCardId = crisisEventId }
-                : t).ToList(), NextSequenceNumber);
+                : t).ToList(), NextSequenceNumber, Trash);
     }
 
     /// <summary>
@@ -144,7 +195,7 @@ public sealed record Inbox(IReadOnlyList<EmailThread> Threads, long NextSequence
     {
         return new Inbox(Threads.Select(t =>
             t with { Messages = t.Messages.Select(m =>
-                m.MessageId == messageId ? m.WithRead() : m).ToList() }).ToList(), NextSequenceNumber);
+                m.MessageId == messageId ? m.WithRead() : m).ToList() }).ToList(), NextSequenceNumber, Trash);
     }
 
     // === Legacy compatibility layer ===

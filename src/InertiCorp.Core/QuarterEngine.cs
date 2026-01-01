@@ -2,6 +2,7 @@ using InertiCorp.Core.Cards;
 using InertiCorp.Core.Content;
 using InertiCorp.Core.Crisis;
 using InertiCorp.Core.Email;
+using InertiCorp.Core.Llm;
 using InertiCorp.Core.Situation;
 
 namespace InertiCorp.Core;
@@ -75,6 +76,12 @@ public static class QuarterEngine
         {
             (newEventDecks, crisisCard) = state.EventDecks.DrawCrisis(rng);
             log = log.WithEntry(LogEntry.Info("A situation is brewing..."));
+
+            // Pre-generate LLM content for the crisis (if LLM is ready)
+            if (crisisCard != null)
+            {
+                LlmServiceManager.PreGenerateCrisis(crisisCard);
+            }
         }
 
         newState = newState
@@ -180,6 +187,9 @@ public static class QuarterEngine
                 newState = newState
                     .WithCurrentCrisis(crisisCard)
                     .WithSituationResolved(dueSituation.SituationId);
+
+                // Pre-generate LLM content for the erupting situation
+                LlmServiceManager.PreGenerateCrisis(crisisCard);
 
                 log = log.WithEntry(LogEntry.Info($"⚠ Situation erupts: {situationDef.Title}"));
             }
@@ -679,7 +689,7 @@ public static class QuarterEngine
                 }
 
                 var effects = card.Outcomes.GetEffectsForTier(outcomeTier);
-                log = log.WithEntry(LogEntry.Info($"Outcome: {outcomeTier}"));
+                log = log.WithEntry(LogEntry.Outcome(outcomeTier, card.Title, "played"));
 
                 foreach (var effect in effects)
                 {
@@ -761,6 +771,7 @@ public static class QuarterEngine
             }
 
             // Generate email thread for this card play
+            var evilScoreDelta = card.IsCorporate ? card.CorporateIntensity : 0;
             var emailGen = new EmailGenerator(rng.NextInt(0, int.MaxValue));
             var cardThread = emailGen.CreateCardThread(
                 card,
@@ -768,8 +779,18 @@ public static class QuarterEngine
                 meterDeltas,
                 state.Quarter.QuarterNumber,
                 state.Org.Alignment,
-                profitDelta);  // Include profit for Revenue card emails
+                profitDelta,      // Include profit for Revenue card emails
+                evilScoreDelta);  // Include evil score for Corporate cards
             var newInbox = newState.Inbox.WithThreadAdded(cardThread);
+
+            // 15% chance to receive random fluff email (corporate noise)
+            if (rng.NextInt(1, 101) <= 15)
+            {
+                var fluffGen = new FluffEmailGenerator(rng.NextInt(0, int.MaxValue));
+                var fluffThread = fluffGen.GenerateFluffEmail(state.Quarter.QuarterNumber);
+                newInbox = newInbox.WithThreadAdded(fluffThread);
+            }
+
             newState = newState.WithInbox(newInbox);
 
             // Check for situation trigger from this card

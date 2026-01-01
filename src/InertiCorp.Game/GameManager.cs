@@ -1,6 +1,10 @@
 using Godot;
 using InertiCorp.Core;
 using InertiCorp.Core.Content;
+using InertiCorp.Core.Email;
+using InertiCorp.Core.Llm;
+using InertiCorp.Game.Audio;
+using InertiCorp.Game.Dashboard;
 
 namespace InertiCorp.Game;
 
@@ -32,6 +36,25 @@ public partial class GameManager : Node
     /// The RNG instance used for this game session.
     /// </summary>
     private SeededRng? _rng;
+
+    /// <summary>
+    /// Stores deferred meter deltas for queued cards - effects are applied when project completes.
+    /// Key is cardId, value is the meter changes and other deltas.
+    /// </summary>
+    private readonly Dictionary<string, DeferredCardEffects> _deferredEffects = new();
+
+    /// <summary>
+    /// Deferred effects for a card that will be applied when project completes.
+    /// </summary>
+    private record DeferredCardEffects(
+        int DeliveryDelta,
+        int MoraleDelta,
+        int GovernanceDelta,
+        int AlignmentDelta,
+        int RunwayDelta,
+        int ProfitDelta,
+        int EvilScoreDelta,
+        int FavorabilityDelta);
 
     /// <summary>
     /// The current crisis event card being displayed (null if not in crisis phase).
@@ -68,7 +91,50 @@ public partial class GameManager : Node
 
     public override void _Ready()
     {
+        InitializeMusicManager();
+        InitializeLlmService();
         StartNewGame();
+    }
+
+    private void InitializeMusicManager()
+    {
+        // Create and add the music manager as a child so it persists
+        var musicManager = new MusicManager();
+        AddChild(musicManager);
+    }
+
+    private async void InitializeLlmService()
+    {
+        // Initialize the LLM service manager
+        LlmServiceManager.Initialize();
+        LlmServiceManager.Ready += OnLlmReady;
+        LlmServiceManager.LoadFailed += OnLlmLoadFailed;
+
+        // Try to load the active model in the background
+        try
+        {
+            await LlmServiceManager.LoadActiveModelAsync();
+        }
+        catch (System.Exception ex)
+        {
+            GD.PrintErr($"Failed to load LLM model: {ex.Message}");
+        }
+    }
+
+    private void OnLlmReady()
+    {
+        GD.Print($"[GameManager] LLM ready: {LlmServiceManager.LoadedModelName}");
+    }
+
+    private void OnLlmLoadFailed(System.Exception ex)
+    {
+        GD.PrintErr($"[GameManager] LLM load failed: {ex.Message}");
+    }
+
+    public override void _ExitTree()
+    {
+        // Clean up LLM service
+        LlmServiceManager.Shutdown();
     }
 
     /// <summary>
@@ -125,29 +191,106 @@ public partial class GameManager : Node
 
     /// <summary>
     /// Makes a choice for the crisis card.
+    /// Effects are deferred until the player clicks "Accept Result" on the resolution email.
     /// </summary>
     public void MakeCrisisChoice(string choiceId)
     {
         if (CurrentState is null || _rng is null) return;
         if (CurrentState.Quarter.Phase != GamePhase.Crisis) return;
+        if (CurrentState.CurrentCrisis is null) return;
 
-        var input = QuarterInput.ForChoice(choiceId);
+        var crisis = CurrentState.CurrentCrisis;
+        var choice = crisis.GetChoice(choiceId);
 
-        try
+        GD.Print($"[GameManager] Making crisis choice: {crisis.Title} with choice: {choice.Label}");
+
+        var newState = CurrentState;
+
+        // Handle PC cost immediately (not deferred)
+        if (choice.HasPCCost)
         {
-            var (newState, log) = QuarterEngine.Advance(CurrentState, input, _rng);
-            CurrentState = newState;
-            LastLog = log;
-            Phase = UIPhase.ShowingResolution; // Crisis now goes directly to Resolution
+            if (!newState.Resources.CanAfford(choice.PCCost))
+            {
+                GD.PrintErr($"[GameManager] Cannot afford crisis choice (need {choice.PCCost} PC)");
+                return;
+            }
+            newState = newState.WithResources(newState.Resources.WithSpend(choice.PCCost));
+        }
 
-            LogPhase(log);
-            EmitSignal(SignalName.StateChanged);
-            EmitSignal(SignalName.PhaseChanged);
-        }
-        catch (System.ArgumentException ex)
+        // Determine outcome and calculate effects (but don't apply yet)
+        var outcomeTier = OutcomeTier.Expected;
+        IReadOnlyList<IEffect> effectsToApply;
+        var meterDeltas = new List<(Meter Meter, int Delta)>();
+
+        if (choice.HasTieredOutcomes && choice.OutcomeProfile is not null)
         {
-            GD.PrintErr($"[GameManager] Invalid choice: {ex.Message}");
+            outcomeTier = OutcomeRoller.RollCrisisChoice(choice.OutcomeProfile, choice, _rng);
+            effectsToApply = choice.OutcomeProfile.GetEffectsForTier(outcomeTier);
         }
+        else
+        {
+            effectsToApply = choice.Effects;
+        }
+
+        // Calculate effects without applying
+        foreach (var effect in effectsToApply)
+        {
+            if (effect is MeterEffect meterEffect)
+            {
+                meterDeltas.Add((meterEffect.Meter, meterEffect.Delta));
+            }
+        }
+
+        // Calculate corporate choice effects
+        var evilScoreDelta = choice.IsCorporateChoice ? choice.CorporateIntensityDelta : 0;
+        var favorabilityDelta = choice.IsCorporateChoice ? 1 + (choice.CorporateIntensityDelta - 1) : 0;
+
+        // Store deferred effects using a crisis-specific key
+        var crisisKey = $"crisis_{crisis.EventId}_{CurrentState.Quarter.QuarterNumber}";
+        _deferredEffects[crisisKey] = new DeferredCardEffects(
+            DeliveryDelta: meterDeltas.Where(m => m.Meter == Meter.Delivery).Sum(m => m.Delta),
+            MoraleDelta: meterDeltas.Where(m => m.Meter == Meter.Morale).Sum(m => m.Delta),
+            GovernanceDelta: meterDeltas.Where(m => m.Meter == Meter.Governance).Sum(m => m.Delta),
+            AlignmentDelta: meterDeltas.Where(m => m.Meter == Meter.Alignment).Sum(m => m.Delta),
+            RunwayDelta: meterDeltas.Where(m => m.Meter == Meter.Runway).Sum(m => m.Delta),
+            ProfitDelta: 0,  // Crises don't affect profit directly
+            EvilScoreDelta: evilScoreDelta,
+            FavorabilityDelta: favorabilityDelta);
+
+        // Generate a thread ID for the resolution email (created when AI completes)
+        var threadId = $"crisis_res_{Guid.NewGuid():N}";
+
+        // Store pending resolution info - email will be created when AI completes
+        var pendingResolution = new PendingCrisisResolution(
+            CrisisTitle: crisis.Title,
+            ChoiceLabel: choice.Label,
+            Outcome: outcomeTier,
+            MeterDeltas: meterDeltas,
+            QuarterNumber: CurrentState.Quarter.QuarterNumber,
+            WasCorporateChoice: choice.IsCorporateChoice,
+            EvilScoreDelta: evilScoreDelta,
+            CrisisKey: crisisKey);
+
+        // Clear the crisis and advance to Resolution phase
+        // Email will be added when AI completes
+        newState = newState.WithCurrentCrisis(null);
+        newState = newState.WithQuarter(newState.Quarter with { Phase = GamePhase.Resolution });
+        CurrentState = newState;
+        Phase = UIPhase.ShowingResolution;
+
+        GD.Print($"[GameManager] Crisis queued for AI: {crisis.Title} - Outcome: {outcomeTier} (awaiting AI)");
+        EmitSignal(SignalName.StateChanged);
+        EmitSignal(SignalName.PhaseChanged);
+
+        // Trigger async AI generation - email created when AI completes
+        TriggerCrisisAiGeneration(
+            threadId,
+            crisis.Title,
+            crisis.Description,
+            isResolution: true,
+            choiceLabel: choice.Label,
+            outcomeTier: outcomeTier.ToString(),
+            pendingResolution: pendingResolution);
     }
 
     /// <summary>
@@ -216,6 +359,98 @@ public partial class GameManager : Node
     }
 
     /// <summary>
+    /// Plays a card that was queued in the project queue.
+    /// Effects are deferred until the project completes (after AI generation).
+    /// </summary>
+    public void PlayQueuedCard(string cardId)
+    {
+        if (CurrentState is null || _rng is null) return;
+        if (CurrentState.Quarter.Phase != GamePhase.PlayCards) return;
+
+        // Check that the card is actually in the hand
+        if (!CurrentState.Hand.Contains(cardId))
+        {
+            GD.PrintErr($"[GameManager] Queued card {cardId} not found in hand");
+            return;
+        }
+
+        // Store the pre-play state (before effects)
+        var preOrg = CurrentState.Org;
+        var preCEO = CurrentState.CEO;
+
+        // Play the card - this applies effects and creates email
+        var input = QuarterInput.ForPlayCard(cardId, endPhase: false);
+        var (newState, log) = QuarterEngine.Advance(CurrentState, input, _rng);
+
+        // Calculate the deltas (what changed)
+        var deltas = new DeferredCardEffects(
+            DeliveryDelta: newState.Org.Delivery - preOrg.Delivery,
+            MoraleDelta: newState.Org.Morale - preOrg.Morale,
+            GovernanceDelta: newState.Org.Governance - preOrg.Governance,
+            AlignmentDelta: newState.Org.Alignment - preOrg.Alignment,
+            RunwayDelta: newState.Org.Runway - preOrg.Runway,
+            ProfitDelta: newState.CEO.CurrentQuarterProfit - preCEO.CurrentQuarterProfit,
+            EvilScoreDelta: newState.CEO.EvilScore - preCEO.EvilScore,
+            FavorabilityDelta: newState.CEO.BoardFavorability - preCEO.BoardFavorability);
+
+        _deferredEffects[cardId] = deltas;
+
+        // Restore the pre-play org/CEO state - effects will be applied when project completes
+        // Keep the rest of the state (inbox with email, hand without card, etc.)
+        var deferredState = newState
+            .WithOrg(preOrg)
+            .WithCEO(preCEO);
+
+        CurrentState = deferredState;
+        LastLog = log;
+
+        LogPhase(log);
+        GD.Print($"[GameManager] Queued card played (effects deferred): {cardId}");
+
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Applies the deferred effects for a completed project.
+    /// Called when project finishes in the queue (after AI generation or timeout).
+    /// </summary>
+    public void ApplyDeferredEffects(string cardId)
+    {
+        if (CurrentState is null) return;
+
+        if (!_deferredEffects.TryGetValue(cardId, out var effects))
+        {
+            GD.Print($"[GameManager] No deferred effects for card {cardId}");
+            return;
+        }
+
+        // Apply the deferred deltas to current state
+        var newOrg = CurrentState.Org
+            .WithMeterChange(Meter.Delivery, effects.DeliveryDelta)
+            .WithMeterChange(Meter.Morale, effects.MoraleDelta)
+            .WithMeterChange(Meter.Governance, effects.GovernanceDelta)
+            .WithMeterChange(Meter.Alignment, effects.AlignmentDelta)
+            .WithMeterChange(Meter.Runway, effects.RunwayDelta);
+
+        var newCEO = CurrentState.CEO with
+        {
+            CurrentQuarterProfit = CurrentState.CEO.CurrentQuarterProfit + effects.ProfitDelta,
+            EvilScore = CurrentState.CEO.EvilScore + effects.EvilScoreDelta,
+            BoardFavorability = Math.Clamp(CurrentState.CEO.BoardFavorability + effects.FavorabilityDelta, 0, 100)
+        };
+
+        CurrentState = CurrentState
+            .WithOrg(newOrg)
+            .WithCEO(newCEO);
+
+        // Clean up
+        _deferredEffects.Remove(cardId);
+
+        GD.Print($"[GameManager] Applied deferred effects for card {cardId}");
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
     /// Ends the play cards phase without playing more cards.
     /// </summary>
     public void EndPlayCardsPhase()
@@ -229,27 +464,16 @@ public partial class GameManager : Node
 
         LogPhase(log);
 
-        // Generate the crisis email immediately (if there's a crisis)
+        // Process crisis phase (follow-ups, draw crisis) but don't stop for separate UI
         if (CurrentState.Quarter.Phase == GamePhase.Crisis)
         {
             var (crisisState, crisisLog) = QuarterEngine.Advance(CurrentState, QuarterInput.Empty, _rng);
             CurrentState = crisisState;
             LogPhase(crisisLog);
+        }
 
-            // Check if crisis was skipped (no crisis drawn this quarter)
-            if (CurrentState.Quarter.Phase == GamePhase.Resolution)
-            {
-                Phase = UIPhase.ShowingResolution;
-            }
-            else
-            {
-                Phase = UIPhase.ShowingCrisis;
-            }
-        }
-        else
-        {
-            Phase = UIPhase.ShowingCrisis;
-        }
+        // Always go directly to Resolution - crises handled as inbox items there
+        Phase = UIPhase.ShowingResolution;
 
         EmitSignal(SignalName.StateChanged);
         EmitSignal(SignalName.PhaseChanged);
@@ -368,6 +592,112 @@ public partial class GameManager : Node
         if (CurrentState is null) return;
 
         var newInbox = CurrentState.Inbox.WithThreadRead(threadId);
+        CurrentState = CurrentState.WithInbox(newInbox);
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Moves an email thread to the trash.
+    /// </summary>
+    public void TrashThread(string threadId)
+    {
+        if (CurrentState is null) return;
+
+        var newInbox = CurrentState.Inbox.WithThreadTrashed(threadId);
+        CurrentState = CurrentState.WithInbox(newInbox);
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Restores an email thread from trash.
+    /// </summary>
+    public void RestoreThread(string threadId)
+    {
+        if (CurrentState is null) return;
+
+        var newInbox = CurrentState.Inbox.WithThreadRestored(threadId);
+        CurrentState = CurrentState.WithInbox(newInbox);
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Empties the trash bin.
+    /// </summary>
+    public void EmptyTrash()
+    {
+        if (CurrentState is null) return;
+
+        var newInbox = CurrentState.Inbox.WithTrashEmptied();
+        CurrentState = CurrentState.WithInbox(newInbox);
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Accepts the pending effects for a project or crisis email thread.
+    /// For queued cards, effects were already applied when card was played.
+    /// For crisis resolutions, effects are deferred and applied here.
+    /// </summary>
+    public void AcceptProjectEffects(string threadId)
+    {
+        if (CurrentState is null) return;
+
+        var thread = CurrentState.Inbox.Threads.FirstOrDefault(t => t.ThreadId == threadId);
+        if (thread is null || !thread.HasPendingEffects) return;
+
+        // Check if this thread has deferred effects to apply (crisis resolutions)
+        var effectKey = thread.OriginatingCardId;
+        if (effectKey is not null && _deferredEffects.TryGetValue(effectKey, out var effects))
+        {
+            // Apply the deferred effects
+            var newOrg = CurrentState.Org
+                .WithMeterChange(Meter.Delivery, effects.DeliveryDelta)
+                .WithMeterChange(Meter.Morale, effects.MoraleDelta)
+                .WithMeterChange(Meter.Governance, effects.GovernanceDelta)
+                .WithMeterChange(Meter.Alignment, effects.AlignmentDelta)
+                .WithMeterChange(Meter.Runway, effects.RunwayDelta);
+
+            var newCEO = CurrentState.CEO with
+            {
+                CurrentQuarterProfit = CurrentState.CEO.CurrentQuarterProfit + effects.ProfitDelta,
+                EvilScore = CurrentState.CEO.EvilScore + effects.EvilScoreDelta,
+                BoardFavorability = Math.Clamp(CurrentState.CEO.BoardFavorability + effects.FavorabilityDelta, 0, 100)
+            };
+
+            CurrentState = CurrentState
+                .WithOrg(newOrg)
+                .WithCEO(newCEO);
+
+            // Clean up deferred effects
+            _deferredEffects.Remove(effectKey);
+            GD.Print($"[GameManager] Applied deferred effects for: {effectKey}");
+        }
+
+        // Mark effects as accepted
+        var updatedThread = thread.WithEffectsAccepted();
+        var newInbox = CurrentState.Inbox.WithThreadReplaced(threadId, updatedThread);
+        CurrentState = CurrentState.WithInbox(newInbox);
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Updates an email thread with a replacement (e.g., with AI-generated content).
+    /// Does not emit StateChanged - caller should emit if UI update is needed.
+    /// </summary>
+    public void UpdateThread(string threadId, EmailThread updatedThread)
+    {
+        if (CurrentState is null) return;
+
+        var newInbox = CurrentState.Inbox.WithThreadReplaced(threadId, updatedThread);
+        CurrentState = CurrentState.WithInbox(newInbox);
+    }
+
+    /// <summary>
+    /// Replaces the entire inbox (for adding new threads, etc.).
+    /// </summary>
+    public void UpdateInbox(Inbox newInbox)
+    {
+        if (CurrentState is null) return;
+
         CurrentState = CurrentState.WithInbox(newInbox);
         EmitSignal(SignalName.StateChanged);
     }
@@ -569,6 +899,113 @@ public partial class GameManager : Node
 
         // Don't change UI phase - just signal state changed so inbox updates
         EmitSignal(SignalName.StateChanged);
+
+        // Trigger async AI generation to update the email content
+        TriggerCrisisAiGeneration(crisisThread.ThreadId, crisisCard.Title, crisisCard.Description, isResolution: false);
+    }
+
+    // Stores pending crisis resolution info until AI completes
+    private readonly Dictionary<string, PendingCrisisResolution> _pendingCrisisResolutions = new();
+
+    private record PendingCrisisResolution(
+        string CrisisTitle,
+        string ChoiceLabel,
+        OutcomeTier Outcome,
+        IReadOnlyList<(Meter Meter, int Delta)> MeterDeltas,
+        int QuarterNumber,
+        bool WasCorporateChoice,
+        int EvilScoreDelta,
+        string CrisisKey);
+
+    /// <summary>
+    /// Triggers async AI content generation for a crisis email via the shared queue.
+    /// The email is NOT added until AI completes - no instant canned fallback.
+    /// </summary>
+    private void TriggerCrisisAiGeneration(
+        string threadId,
+        string crisisTitle,
+        string crisisDescription,
+        bool isResolution,
+        string? choiceLabel = null,
+        string? outcomeTier = null,
+        PendingCrisisResolution? pendingResolution = null)
+    {
+        var promptType = isResolution ? AiPromptType.CrisisResponse : AiPromptType.CrisisInitial;
+        var priority = isResolution ? AiPriority.Low : AiPriority.Normal;
+
+        Dictionary<string, string>? context = null;
+        if (isResolution)
+        {
+            context = new Dictionary<string, string>();
+            if (choiceLabel is not null) context["choiceLabel"] = choiceLabel;
+            if (outcomeTier is not null) context["outcomeTier"] = outcomeTier;
+        }
+
+        // Store pending resolution info so we can create the email when AI completes
+        if (pendingResolution is not null)
+        {
+            _pendingCrisisResolutions[threadId] = pendingResolution;
+        }
+
+        GD.Print($"[GameManager] Queueing crisis AI generation: {crisisTitle} (priority: {priority})");
+
+        // Use shared AI queue - email created only when AI completes
+        ProjectQueuePanel.QueueExternalAiRequest(
+            threadId,
+            crisisTitle,
+            crisisDescription,
+            promptType,
+            priority,
+            aiBody => CreateCrisisEmailWithAiContent(threadId, aiBody),
+            context);
+    }
+
+    private void CreateCrisisEmailWithAiContent(string threadId, string aiBody)
+    {
+        if (CurrentState is null || _rng is null) return;
+
+        // Check if we have pending resolution info for this thread
+        if (!_pendingCrisisResolutions.TryGetValue(threadId, out var pending))
+        {
+            GD.PrintErr($"[GameManager] No pending crisis resolution for {threadId}");
+            return;
+        }
+
+        _pendingCrisisResolutions.Remove(threadId);
+
+        // Create the email with AI content (or fallback if AI genuinely failed after retries)
+        var emailGen = new Core.Email.EmailGenerator(_rng.NextInt(0, int.MaxValue));
+        var resolutionThread = emailGen.CreateCrisisResolutionThread(
+            pending.CrisisTitle,
+            pending.ChoiceLabel,
+            pending.Outcome,
+            pending.MeterDeltas,
+            pending.QuarterNumber,
+            pending.WasCorporateChoice,
+            pending.EvilScoreDelta);
+
+        // Override body with AI content if available
+        if (!string.IsNullOrWhiteSpace(aiBody))
+        {
+            var updatedMessages = resolutionThread.Messages.Select(m =>
+                m.IsFromPlayer ? m : m with { Body = aiBody }).ToList();
+            resolutionThread = resolutionThread with { Messages = updatedMessages };
+            GD.Print($"[GameManager] Crisis email created with AI content: {aiBody[..Math.Min(50, aiBody.Length)]}...");
+        }
+        else
+        {
+            GD.Print($"[GameManager] Crisis email created with fallback content (AI unavailable)");
+        }
+
+        // Set the crisis key for deferred effects
+        resolutionThread = resolutionThread with { OriginatingCardId = pending.CrisisKey };
+
+        // NOW add the thread to inbox
+        var newInbox = CurrentState.Inbox.WithThreadAdded(resolutionThread);
+        CurrentState = CurrentState.WithInbox(newInbox);
+
+        GD.Print($"[GameManager] Crisis resolution email added to inbox: {threadId}");
+        EmitSignal(SignalName.StateChanged);
     }
 
     /// <summary>
@@ -581,6 +1018,7 @@ public partial class GameManager : Node
 
     /// <summary>
     /// Responds to a pending crisis (from any phase).
+    /// Effects are deferred until the player clicks "Accept Result" on the resolution email.
     /// This allows handling interrupt crises without changing the game phase.
     /// </summary>
     public void RespondToPendingCrisis(string choiceId)
@@ -593,10 +1031,9 @@ public partial class GameManager : Node
 
         GD.Print($"[GameManager] Responding to crisis: {crisis.Title} with choice: {choice.Label}");
 
-        // Apply choice effects (simplified - full logic is in QuarterEngine.AdvanceCrisis)
         var newState = CurrentState;
 
-        // Handle PC cost
+        // Handle PC cost immediately (not deferred)
         if (choice.HasPCCost)
         {
             if (!newState.Resources.CanAfford(choice.PCCost))
@@ -607,7 +1044,7 @@ public partial class GameManager : Node
             newState = newState.WithResources(newState.Resources.WithSpend(choice.PCCost));
         }
 
-        // Determine outcome and apply effects
+        // Determine outcome and calculate effects (but don't apply yet)
         var outcomeTier = OutcomeTier.Expected;
         IReadOnlyList<IEffect> effectsToApply;
         var meterDeltas = new List<(Meter Meter, int Delta)>();
@@ -622,45 +1059,62 @@ public partial class GameManager : Node
             effectsToApply = choice.Effects;
         }
 
-        // Apply effects
+        // Calculate effects without applying
         foreach (var effect in effectsToApply)
         {
             if (effect is MeterEffect meterEffect)
             {
                 meterDeltas.Add((meterEffect.Meter, meterEffect.Delta));
             }
-
-            var adapted = GameState.NewGame(newState.Seed).WithOrg(newState.Org);
-            var (updatedAdapted, _) = effect.Apply(adapted, _rng);
-            newState = newState.WithOrg(updatedAdapted.Org);
         }
 
-        // Handle corporate choice
-        if (choice.IsCorporateChoice)
-        {
-            var newCEO = newState.CEO.WithEvilScoreChange(choice.CorporateIntensityDelta);
-            int favBump = 1 + (choice.CorporateIntensityDelta - 1);
-            newCEO = newCEO.WithFavorabilityChange(favBump);
-            newState = newState.WithCEO(newCEO);
-        }
+        // Calculate corporate choice effects
+        var evilScoreDelta = choice.IsCorporateChoice ? choice.CorporateIntensityDelta : 0;
+        var favorabilityDelta = choice.IsCorporateChoice ? 1 + (choice.CorporateIntensityDelta - 1) : 0;
 
-        // Generate resolution email
-        var emailGen = new Core.Email.EmailGenerator(_rng.NextInt(0, int.MaxValue));
-        var resolutionThread = emailGen.CreateCrisisResolutionThread(
-            crisis.Title,
-            choice.Label,
-            outcomeTier,
-            meterDeltas,
-            CurrentState.Quarter.QuarterNumber,
-            choice.IsCorporateChoice);
-        newState = newState.WithInbox(newState.Inbox.WithThreadAdded(resolutionThread));
+        // Store deferred effects using a crisis-specific key
+        var crisisKey = $"crisis_{crisis.EventId}_{CurrentState.Quarter.QuarterNumber}";
+        _deferredEffects[crisisKey] = new DeferredCardEffects(
+            DeliveryDelta: meterDeltas.Where(m => m.Meter == Meter.Delivery).Sum(m => m.Delta),
+            MoraleDelta: meterDeltas.Where(m => m.Meter == Meter.Morale).Sum(m => m.Delta),
+            GovernanceDelta: meterDeltas.Where(m => m.Meter == Meter.Governance).Sum(m => m.Delta),
+            AlignmentDelta: meterDeltas.Where(m => m.Meter == Meter.Alignment).Sum(m => m.Delta),
+            RunwayDelta: meterDeltas.Where(m => m.Meter == Meter.Runway).Sum(m => m.Delta),
+            ProfitDelta: 0,  // Crises don't affect profit directly
+            EvilScoreDelta: evilScoreDelta,
+            FavorabilityDelta: favorabilityDelta);
+
+        // Generate a thread ID for the resolution email (created when AI completes)
+        var threadId = $"crisis_res_{Guid.NewGuid():N}";
+
+        // Store pending resolution info - email will be created when AI completes
+        var pendingResolution = new PendingCrisisResolution(
+            CrisisTitle: crisis.Title,
+            ChoiceLabel: choice.Label,
+            Outcome: outcomeTier,
+            MeterDeltas: meterDeltas,
+            QuarterNumber: CurrentState.Quarter.QuarterNumber,
+            WasCorporateChoice: choice.IsCorporateChoice,
+            EvilScoreDelta: evilScoreDelta,
+            CrisisKey: crisisKey);
 
         // Clear the crisis but stay in current phase
+        // Email will be added when AI completes
         newState = newState.WithCurrentCrisis(null);
         CurrentState = newState;
 
-        GD.Print($"[GameManager] Crisis resolved: {crisis.Title} - Outcome: {outcomeTier}");
+        GD.Print($"[GameManager] Crisis queued for AI: {crisis.Title} - Outcome: {outcomeTier} (awaiting AI)");
         EmitSignal(SignalName.StateChanged);
+
+        // Trigger async AI generation - email created when AI completes
+        TriggerCrisisAiGeneration(
+            threadId,
+            crisis.Title,
+            crisis.Description,
+            isResolution: true,
+            choiceLabel: choice.Label,
+            outcomeTier: outcomeTier.ToString(),
+            pendingResolution: pendingResolution);
     }
 
     private void LogPhase(QuarterLog log)

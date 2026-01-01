@@ -1,0 +1,67 @@
+{
+  "employees": {
+    "PM": [
+      { "name": "Jamie Chen", "title": "Product Manager", "department": "Product" },
+      { "name": "Sarah Walsh", "title": "Senior Product Manager", "department": "Product" },
+      { "name": "Mike Rodriguez", "title": "Principal PM", "department": "Product" }
+    ],
+    "EngManager": [
+      { "name": "Alex Rivera", "title": "Engineering Director", "department": "Engineering" },
+      { "name": "Dave Kumar", "title": "VP of Engineering", "department": "Engineering" },
+      { "name": "Lisa Park", "title": "Senior Engineering Manager", "department": "Engineering" }
+    ],
+    "Legal": [
+      { "name": "Morgan Wells", "title": "General Counsel", "department": "Legal" },
+      { "name": "Jennifer Blackwood", "title": "Associate General Counsel", "department": "Legal" },
+      { "name": "Richard Thornton III", "title": "Chief Compliance Officer", "department": "Legal" }
+    ],
+    "Security": [
+      { "name": "Taylor Kim", "title": "Chief Information Security Officer", "department": "InfoSec" },
+      { "name": "Marcus Chen", "title": "Security Architect", "department": "InfoSec" }
+    ],
+    "CFO": [
+      { "name": "Jordan Blake", "title": "Chief Financial Officer", "department": "Finance" },
+      { "name": "Victoria Sterling", "title": "VP of Finance", "department": "Finance" },
+      { "name": "Robert Chen", "title": "Controller", "department": "Finance" }
+    ],
+    "HR": [
+      { "name": "Casey Morgan", "title": "Chief People Officer", "department": "Human Resources" },
+      { "name": "Samantha Reyes", "title": "VP of Talent Acquisition", "department": "Human Resources" },
+      { "name": "Derek Thompson", "title": "Director of Employee Experience", "department": "Human Resources" }
+    ],
+    "Marketing": [
+      { "name": "Riley Thompson", "title": "Chief Marketing Officer", "department": "Marketing" },
+      { "name": "Brandon Hayes", "title": "VP of Brand Strategy", "department": "Marketing" },
+      { "name": "Aisha Patel", "title": "Director of Growth", "department": "Marketing" }
+    ],
+    "BoardMember": [
+      { "name": "Patricia Sterling", "title": "Chairperson, Board of Directors", "department": "Board" },
+      { "name": "William Harrington IV", "title": "Board Member", "department": "Board" },
+      { "name": "Dr. Eleanor Vance", "title": "Independent Director", "department": "Board" }
+    ],
+    "TechLead": [
+      { "name": "Sam Park", "title": "Principal Engineer", "department": "Engineering" },
+      { "name": "Chris Nakamura", "title": "Staff Engineer", "department": "Engineering" },
+      { "name": "Priya Sharma", "title": "Tech Lead", "department": "Engineering" }
+    ],
+    "Compliance": [
+      { "name": "Drew Martinez", "title": "Compliance Director", "department": "Legal & Compliance" },
+      { "name": "Susan Chen", "title": "Senior Compliance Analyst", "department": "Legal & Compliance" }
+    ],
+    "AllStaff": [
+      { "name": "Linda from Accounting", "title": "Senior Accountant II", "department": "Finance" },
+      { "name": "Greg", "title": "Facilities Coordinator", "department": "Operations" },
+      { "name": "Unnamed Intern", "title": "Summer Intern (Extended)", "department": "Various" },
+      { "name": "T. Johnson", "title": "Associate Manager of Synergy Optimization", "department": "Strategic Initiatives" },
+      { "name": "Karen", "title": "Executive Assistant to the Assistant Executive", "department": "Administration" },
+      { "name": "Brad from Sales", "title": "Regional Sales Director (Self-Appointed)", "department": "Revenue" },
+      { "name": "Someone in IT", "title": "Systems Administrator", "department": "IT" }
+    ]
+  },
+  "signatureFormats": {
+    "formal": "{name}\n{title}\n{department}\nInertiCorp Holdings, LLC\n\n\"Synergy Through Excellence\"",
+    "standard": "{name}\n{title} | {department}\nInertiCorp",
+    "casual": "- {name}\n{title}",
+    "board": "{name}\n{title}\nInertiCorp Holdings, LLC\n\nThis communication is confidential and privileged."
+  }
+}

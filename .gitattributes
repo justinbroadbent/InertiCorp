@@ -1,0 +1,11 @@
+# Audio files - treat as binary
+*.mp3 binary
+
+# Images - treat as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+
+# Godot specific
+*.import binary

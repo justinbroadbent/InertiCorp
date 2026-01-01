@@ -3,6 +3,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>InertiCorp.Game</RootNamespace>
     <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Configurations>Debug;Release;ExportDebug;ExportRelease</Configurations>
+  </PropertyGroup>
+
+  <!-- Godot export configurations -->
+  <PropertyGroup Condition="'$(Configuration)' == 'ExportDebug' or '$(Configuration)' == 'ExportRelease'">
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\InertiCorp.Core\InertiCorp.Core.csproj" />

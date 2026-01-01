@@ -17,7 +17,8 @@ public sealed class EmailGenerator
     public EmailGenerator(int seed, IEmailContentProvider? contentProvider = null)
     {
         _seed = seed;
-        _contentProvider = contentProvider ?? new CorporateHumorCorpus();
+        // Use LLM-aware provider by default - it falls back to canned templates when LLM isn't ready
+        _contentProvider = contentProvider ?? new LlmEmailContentProvider();
         _threadCounter = 0;
         _messageCounter = 0;
     }
@@ -33,7 +34,8 @@ public sealed class EmailGenerator
         IReadOnlyList<(Meter Meter, int Delta)> meterDeltas,
         int turnNumber,
         int alignment,
-        int profitDelta = 0)
+        int profitDelta = 0,
+        int evilScoreDelta = 0)
     {
         var threadId = GenerateThreadId();
         var subject = GenerateSubject(card);
@@ -45,13 +47,21 @@ public sealed class EmailGenerator
         var replyMessage = CreateReplyMessage(
             threadId, subject, card, outcome, meterDeltas, turnNumber, alignment, profitDelta);
 
+        // Create pending effects for display (player must acknowledge)
+        var pendingEffects = new PendingProjectEffects(
+            MeterChanges: meterDeltas,
+            ProfitDelta: profitDelta,
+            EvilScoreDelta: evilScoreDelta,
+            OutcomeText: outcome.ToString());
+
         return new EmailThread(
             ThreadId: threadId,
             Subject: subject,
             OriginatingCardId: card.CardId,
             CreatedOnTurn: turnNumber,
             Messages: new[] { askMessage, replyMessage },
-            ThreadType: EmailThreadType.CardResult);
+            ThreadType: EmailThreadType.CardResult,
+            PendingEffects: pendingEffects);
     }
 
     /// <summary>
@@ -1016,7 +1026,8 @@ public sealed class EmailGenerator
         OutcomeTier outcome,
         IReadOnlyList<(Meter Meter, int Delta)> meterDeltas,
         int quarterNumber,
-        bool wasCorporateChoice = false)
+        bool wasCorporateChoice = false,
+        int evilScoreDelta = 0)
     {
         var threadId = GenerateThreadId();
         var eventId = $"crisis_resolution_{quarterNumber}_{crisisTitle.GetHashCode()}";
@@ -1084,13 +1095,21 @@ public sealed class EmailGenerator
             TurnNumber: quarterNumber,
             LinkedEventIds: new[] { eventId });
 
+        // Create pending effects for display (player must acknowledge)
+        var pendingEffects = new PendingProjectEffects(
+            MeterChanges: meterDeltas,
+            ProfitDelta: 0,  // Crises don't affect profit directly
+            EvilScoreDelta: evilScoreDelta,
+            OutcomeText: outcome.ToString());
+
         return new EmailThread(
             ThreadId: threadId,
             Subject: subject,
             OriginatingCardId: eventId,
             CreatedOnTurn: quarterNumber,
             Messages: new[] { message },
-            ThreadType: EmailThreadType.Notification);
+            ThreadType: EmailThreadType.Notification,
+            PendingEffects: pendingEffects);
     }
 
     /// <summary>

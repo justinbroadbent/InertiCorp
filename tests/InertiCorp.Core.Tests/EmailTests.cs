@@ -505,3 +505,111 @@ public class LegacyEmailTests
         Assert.True(read.IsRead);
     }
 }
+
+public class LlmEmailContentProviderTests
+{
+    [Fact]
+    public void GetOpening_FallsBackToTemplate_WhenLlmNotReady()
+    {
+        // LLM is not initialized, so should fall back to CorporateHumorCorpus
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var opening = provider.GetOpening(context);
+
+        Assert.False(string.IsNullOrEmpty(opening));
+    }
+
+    [Fact]
+    public void GetClosing_FallsBackToTemplate_WhenLlmNotReady()
+    {
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var closing = provider.GetClosing(context);
+
+        Assert.False(string.IsNullOrEmpty(closing));
+    }
+
+    [Fact]
+    public void GetOutcomeBody_FallsBackToTemplate_WhenLlmNotReady()
+    {
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var body = provider.GetOutcomeBody(context, OutcomeTier.Good);
+
+        Assert.False(string.IsNullOrEmpty(body));
+    }
+
+    [Fact]
+    public void GetCrisisBody_FallsBackToTemplate_WhenLlmNotReady()
+    {
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var body = provider.GetCrisisBody(context, "Test Crisis", "A test crisis description");
+
+        Assert.False(string.IsNullOrEmpty(body));
+    }
+
+    [Fact]
+    public void GetCrisisResolutionBody_FallsBackToTemplate_WhenLlmNotReady()
+    {
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var body = provider.GetCrisisResolutionBody(
+            context, "Test Crisis", "Ignore it", OutcomeTier.Bad);
+
+        Assert.False(string.IsNullOrEmpty(body));
+    }
+
+    [Fact]
+    public void GetBoardDirectiveBody_FallsBackToTemplate()
+    {
+        var provider = new LlmEmailContentProvider();
+        var context = CreateTestContext();
+
+        var body = provider.GetBoardDirectiveBody(context, "Profit Target", 10, 1, 1);
+
+        Assert.False(string.IsNullOrEmpty(body));
+    }
+
+    [Fact]
+    public void CanUseCustomFallback()
+    {
+        var customFallback = new StubContentProvider("custom opening", "custom closing");
+        var provider = new LlmEmailContentProvider(customFallback);
+        var context = CreateTestContext();
+
+        var opening = provider.GetOpening(context);
+
+        Assert.Equal("custom opening", opening);
+    }
+
+    private static EmailContentContext CreateTestContext() => new(
+        EventId: "test_event",
+        Seed: 42,
+        Sender: SenderArchetype.PM,
+        Tone: EmailTone.Professional);
+
+    private class StubContentProvider : IEmailContentProvider
+    {
+        private readonly string _opening;
+        private readonly string _closing;
+
+        public StubContentProvider(string opening, string closing)
+        {
+            _opening = opening;
+            _closing = closing;
+        }
+
+        public string GetOpening(EmailContentContext context) => _opening;
+        public string GetClosing(EmailContentContext context) => _closing;
+        public string GetOutcomeBody(EmailContentContext context, OutcomeTier outcome) => "stub body";
+        public string GetCrisisBody(EmailContentContext context, string crisisTitle, string crisisDescription) => "stub crisis";
+        public string GetCrisisResolutionBody(EmailContentContext context, string crisisTitle, string choiceLabel, OutcomeTier outcome) => "stub resolution";
+        public string GetBoardDirectiveBody(EmailContentContext context, string directiveTitle, int requiredAmount, int quarterNumber, int pressureLevel) => "stub directive";
+    }
+}

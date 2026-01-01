@@ -1,5 +1,7 @@
 using Godot;
 using InertiCorp.Core;
+using InertiCorp.Core.Llm;
+using InertiCorp.Game.Audio;
 
 namespace InertiCorp.Game.Settings;
 
@@ -12,6 +14,8 @@ public partial class GameMenu : Control
     private Control? _mainPanel;
     private Control? _settingsPanel;
     private Control? _helpPanel;
+    private Control? _aiModelsPanel;
+    private ModelManager? _modelManager;
 
     [Signal]
     public delegate void ResumeGameEventHandler();
@@ -26,6 +30,11 @@ public partial class GameMenu : Control
 
     private void SetupUI()
     {
+        // Initialize model manager
+        _modelManager = new ModelManager();
+        _modelManager.ModelStatusChanged += OnModelStatusChanged;
+        _modelManager.ActiveModelChanged += OnActiveModelChanged;
+
         // Full-screen overlay
         SetAnchorsPreset(LayoutPreset.FullRect);
         Size = GetViewportRect().Size;
@@ -57,6 +66,11 @@ public partial class GameMenu : Control
         _helpPanel = CreateHelpPanel();
         _helpPanel.Visible = false;
         centerContainer.AddChild(_helpPanel);
+
+        // AI Models panel (initially hidden)
+        _aiModelsPanel = CreateAIModelsPanel();
+        _aiModelsPanel.Visible = false;
+        centerContainer.AddChild(_aiModelsPanel);
     }
 
     private Control CreateMainMenuPanel()
@@ -109,6 +123,10 @@ public partial class GameMenu : Control
         var settingsBtn = CreateMenuButton("Settings", "Display and UI options");
         settingsBtn.Pressed += OnSettingsPressed;
         vbox.AddChild(settingsBtn);
+
+        var aiModelsBtn = CreateMenuButton("AI Models", "Manage LLM models for dynamic emails");
+        aiModelsBtn.Pressed += OnAIModelsPressed;
+        vbox.AddChild(aiModelsBtn);
 
         var helpBtn = CreateMenuButton("How to Play", "Learn the ropes of corporate survival");
         helpBtn.Pressed += OnHelpPressed;
@@ -197,6 +215,30 @@ public partial class GameMenu : Control
 
         // UI Scale
         AddSettingRow(grid, "UI Scale:", CreateUIScaleControl());
+
+        vbox.AddChild(new HSeparator());
+
+        // Audio section header
+        var audioHeader = new Label
+        {
+            Text = "AUDIO",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        audioHeader.AddThemeFontSizeOverride("font_size", 18);
+        audioHeader.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
+        vbox.AddChild(audioHeader);
+
+        // Audio settings grid
+        var audioGrid = new GridContainer { Columns = 2 };
+        audioGrid.AddThemeConstantOverride("h_separation", 20);
+        audioGrid.AddThemeConstantOverride("v_separation", 16);
+        vbox.AddChild(audioGrid);
+
+        // Music Volume
+        AddSettingRow(audioGrid, "Music Volume:", CreateMusicVolumeControl());
+
+        // Music Mute
+        AddSettingRow(audioGrid, "Music:", CreateMusicToggle());
 
         vbox.AddChild(new HSeparator());
 
@@ -446,6 +488,80 @@ Your bonus depends on performance:
         return hbox;
     }
 
+    private Control CreateMusicVolumeControl()
+    {
+        var hbox = new HBoxContainer();
+        hbox.AddThemeConstantOverride("separation", 10);
+
+        var slider = new HSlider
+        {
+            MinValue = 0,
+            MaxValue = 1,
+            Step = 0.05,
+            CustomMinimumSize = new Vector2(150, 0),
+            Name = "MusicVolumeSlider"
+        };
+
+        var label = new Label
+        {
+            CustomMinimumSize = new Vector2(50, 0),
+            Name = "MusicVolumeLabel"
+        };
+
+        var music = MusicManager.Instance;
+        if (music != null)
+        {
+            slider.Value = music.Volume;
+            label.Text = $"{(int)(music.Volume * 100)}%";
+        }
+        else
+        {
+            slider.Value = 0.5;
+            label.Text = "50%";
+        }
+
+        slider.ValueChanged += (value) =>
+        {
+            label.Text = $"{(int)(value * 100)}%";
+            if (MusicManager.Instance != null)
+            {
+                MusicManager.Instance.Volume = (float)value;
+            }
+        };
+
+        hbox.AddChild(slider);
+        hbox.AddChild(label);
+
+        return hbox;
+    }
+
+    private Control CreateMusicToggle()
+    {
+        var hbox = new HBoxContainer();
+        hbox.AddThemeConstantOverride("separation", 10);
+
+        var checkbox = new CheckButton
+        {
+            Text = "Enabled",
+            Name = "MusicToggle"
+        };
+
+        var music = MusicManager.Instance;
+        checkbox.ButtonPressed = music == null || !music.IsMuted;
+
+        checkbox.Toggled += (enabled) =>
+        {
+            if (MusicManager.Instance != null)
+            {
+                MusicManager.Instance.IsMuted = !enabled;
+            }
+        };
+
+        hbox.AddChild(checkbox);
+
+        return hbox;
+    }
+
     private Control CreateDifficultyOption()
     {
         var container = new VBoxContainer();
@@ -600,6 +716,7 @@ Your bonus depends on performance:
         _mainPanel!.Visible = panel == _mainPanel;
         _settingsPanel!.Visible = panel == _settingsPanel;
         _helpPanel!.Visible = panel == _helpPanel;
+        _aiModelsPanel!.Visible = panel == _aiModelsPanel;
     }
 
     private void OnResumePressed()
@@ -619,6 +736,11 @@ Your bonus depends on performance:
         ShowPanel(_settingsPanel!);
     }
 
+    private void OnAIModelsPressed()
+    {
+        ShowPanel(_aiModelsPanel!);
+    }
+
     private void OnHelpPressed()
     {
         ShowPanel(_helpPanel!);
@@ -626,6 +748,7 @@ Your bonus depends on performance:
 
     private void OnExitPressed()
     {
+        _modelManager?.Dispose();
         GetTree().Quit();
     }
 
@@ -634,7 +757,7 @@ Your bonus depends on performance:
         if (@event is InputEventKey keyEvent && keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
         {
             // If in a sub-panel, go back to main
-            if (_settingsPanel!.Visible || _helpPanel!.Visible)
+            if (_settingsPanel!.Visible || _helpPanel!.Visible || _aiModelsPanel!.Visible)
             {
                 ShowPanel(_mainPanel!);
             }
@@ -645,5 +768,352 @@ Your bonus depends on performance:
             }
             GetViewport().SetInputAsHandled();
         }
+    }
+
+    private void OnModelStatusChanged(string modelId)
+    {
+        // Refresh the AI models panel when status changes
+        CallDeferred(nameof(RefreshAIModelsPanel));
+    }
+
+    private void OnActiveModelChanged(string? modelId)
+    {
+        // Refresh the AI models panel when active model changes
+        CallDeferred(nameof(RefreshAIModelsPanel));
+    }
+
+    private void RefreshAIModelsPanel()
+    {
+        if (_aiModelsPanel != null)
+        {
+            var parent = _aiModelsPanel.GetParent();
+            var wasVisible = _aiModelsPanel.Visible;
+            _aiModelsPanel.QueueFree();
+            _aiModelsPanel = CreateAIModelsPanel();
+            _aiModelsPanel.Visible = wasVisible;
+            parent?.AddChild(_aiModelsPanel);
+        }
+    }
+
+    private Control CreateAIModelsPanel()
+    {
+        var panel = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(650, 550)
+        };
+        panel.AddThemeStyleboxOverride("panel", CreatePanelStyle());
+
+        var vbox = new VBoxContainer();
+        vbox.AddThemeConstantOverride("separation", 12);
+        panel.AddChild(vbox);
+
+        // Header with back button
+        var header = new HBoxContainer();
+        vbox.AddChild(header);
+
+        var backBtn = new Button { Text = "< Back" };
+        backBtn.Pressed += () => ShowPanel(_mainPanel!);
+        header.AddChild(backBtn);
+
+        var title = new Label
+        {
+            Text = "AI MODELS",
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        title.AddThemeFontSizeOverride("font_size", 24);
+        title.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
+        header.AddChild(title);
+
+        var spacer = new Control { CustomMinimumSize = new Vector2(60, 0) };
+        header.AddChild(spacer);
+
+        vbox.AddChild(new HSeparator());
+
+        // Description
+        var desc = new Label
+        {
+            Text = "Download AI models for dynamic email generation.\nLarger models produce better content but require more resources.",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        desc.AddThemeFontSizeOverride("font_size", 13);
+        desc.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.65f));
+        vbox.AddChild(desc);
+
+        // Model list in scroll container
+        var scroll = new ScrollContainer
+        {
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(0, 300)
+        };
+        scroll.SetHorizontalScrollMode(ScrollContainer.ScrollMode.Disabled);
+        vbox.AddChild(scroll);
+
+        var modelsVbox = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        modelsVbox.AddThemeConstantOverride("separation", 8);
+        scroll.AddChild(modelsVbox);
+
+        // Add model cards
+        foreach (var modelInfo in ModelCatalog.Models)
+        {
+            var modelCard = CreateModelCard(modelInfo);
+            modelsVbox.AddChild(modelCard);
+        }
+
+        // Storage info
+        var storageLabel = new Label
+        {
+            Name = "StorageLabel",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        storageLabel.AddThemeFontSizeOverride("font_size", 12);
+        storageLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
+        UpdateStorageLabel(storageLabel);
+        vbox.AddChild(storageLabel);
+
+        // Model directory info
+        var pathLabel = new Label
+        {
+            Text = $"Models stored in: {ModelManager.GetDefaultModelsDirectory()}",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        pathLabel.AddThemeFontSizeOverride("font_size", 11);
+        pathLabel.AddThemeColorOverride("font_color", new Color(0.4f, 0.4f, 0.45f));
+        vbox.AddChild(pathLabel);
+
+        return panel;
+    }
+
+    private Control CreateModelCard(ModelInfo modelInfo)
+    {
+        var card = new PanelContainer();
+        var cardStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.15f, 0.16f, 0.2f),
+            BorderWidthBottom = 1,
+            BorderWidthLeft = 1,
+            BorderWidthRight = 1,
+            BorderWidthTop = 1,
+            BorderColor = new Color(0.25f, 0.28f, 0.32f),
+            CornerRadiusBottomLeft = 6,
+            CornerRadiusBottomRight = 6,
+            CornerRadiusTopLeft = 6,
+            CornerRadiusTopRight = 6,
+            ContentMarginLeft = 12,
+            ContentMarginRight = 12,
+            ContentMarginTop = 10,
+            ContentMarginBottom = 10
+        };
+        card.AddThemeStyleboxOverride("panel", cardStyle);
+
+        var hbox = new HBoxContainer();
+        hbox.AddThemeConstantOverride("separation", 12);
+        card.AddChild(hbox);
+
+        // Left side: model info
+        var infoVbox = new VBoxContainer
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill
+        };
+        infoVbox.AddThemeConstantOverride("separation", 4);
+        hbox.AddChild(infoVbox);
+
+        // Model name with tier badge
+        var nameHbox = new HBoxContainer();
+        nameHbox.AddThemeConstantOverride("separation", 8);
+        infoVbox.AddChild(nameHbox);
+
+        var nameLabel = new Label { Text = modelInfo.Name };
+        nameLabel.AddThemeFontSizeOverride("font_size", 16);
+        nameHbox.AddChild(nameLabel);
+
+        var tierLabel = new Label
+        {
+            Text = modelInfo.Tier.ToString().ToUpper()
+        };
+        tierLabel.AddThemeFontSizeOverride("font_size", 11);
+        var tierColor = modelInfo.Tier switch
+        {
+            ModelTier.Fast => new Color(0.4f, 0.8f, 0.4f),
+            ModelTier.Balanced => new Color(0.9f, 0.85f, 0.5f),
+            ModelTier.Quality => new Color(0.6f, 0.6f, 1.0f),
+            _ => new Color(0.7f, 0.7f, 0.7f)
+        };
+        tierLabel.AddThemeColorOverride("font_color", tierColor);
+        nameHbox.AddChild(tierLabel);
+
+        // Description
+        var descLabel = new Label
+        {
+            Text = modelInfo.Description,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart
+        };
+        descLabel.AddThemeFontSizeOverride("font_size", 13);
+        descLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.65f));
+        infoVbox.AddChild(descLabel);
+
+        // Size info
+        var sizeLabel = new Label
+        {
+            Text = $"Size: {FormatSize(modelInfo.SizeBytes)}"
+        };
+        sizeLabel.AddThemeFontSizeOverride("font_size", 12);
+        sizeLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
+        infoVbox.AddChild(sizeLabel);
+
+        // Right side: status and actions
+        var actionsVbox = new VBoxContainer();
+        actionsVbox.AddThemeConstantOverride("separation", 6);
+        hbox.AddChild(actionsVbox);
+
+        var status = _modelManager?.GetStatus(modelInfo.Id) ?? ModelStatus.NotDownloaded;
+
+        // Status indicator
+        var statusLabel = new Label
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            CustomMinimumSize = new Vector2(100, 0)
+        };
+        statusLabel.AddThemeFontSizeOverride("font_size", 12);
+
+        switch (status)
+        {
+            case ModelStatus.Active:
+                statusLabel.Text = "ACTIVE";
+                statusLabel.AddThemeColorOverride("font_color", new Color(0.4f, 1.0f, 0.4f));
+                break;
+            case ModelStatus.Downloaded:
+                statusLabel.Text = "Ready";
+                statusLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.8f, 1.0f));
+                break;
+            case ModelStatus.Downloading:
+                statusLabel.Text = "Downloading...";
+                statusLabel.AddThemeColorOverride("font_color", new Color(1.0f, 0.9f, 0.4f));
+                break;
+            default:
+                statusLabel.Text = "Not installed";
+                statusLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
+                break;
+        }
+        actionsVbox.AddChild(statusLabel);
+
+        // Action buttons
+        var buttonsHbox = new HBoxContainer();
+        buttonsHbox.AddThemeConstantOverride("separation", 4);
+        actionsVbox.AddChild(buttonsHbox);
+
+        switch (status)
+        {
+            case ModelStatus.NotDownloaded:
+                var downloadBtn = new Button
+                {
+                    Text = "Download",
+                    CustomMinimumSize = new Vector2(90, 30)
+                };
+                downloadBtn.Pressed += () => StartDownload(modelInfo.Id);
+                buttonsHbox.AddChild(downloadBtn);
+                break;
+
+            case ModelStatus.Downloading:
+                var cancelBtn = new Button
+                {
+                    Text = "Cancel",
+                    CustomMinimumSize = new Vector2(90, 30)
+                };
+                cancelBtn.Pressed += () => _modelManager?.CancelDownload(modelInfo.Id);
+                buttonsHbox.AddChild(cancelBtn);
+                break;
+
+            case ModelStatus.Downloaded:
+                var activateBtn = new Button
+                {
+                    Text = "Activate",
+                    CustomMinimumSize = new Vector2(70, 30)
+                };
+                activateBtn.Pressed += () => _modelManager?.SetActiveModel(modelInfo.Id);
+                buttonsHbox.AddChild(activateBtn);
+
+                var deleteBtn = new Button
+                {
+                    Text = "Delete",
+                    CustomMinimumSize = new Vector2(60, 30)
+                };
+                deleteBtn.AddThemeColorOverride("font_color", new Color(0.9f, 0.5f, 0.5f));
+                deleteBtn.Pressed += () =>
+                {
+                    _modelManager?.Delete(modelInfo.Id);
+                    RefreshAIModelsPanel();
+                };
+                buttonsHbox.AddChild(deleteBtn);
+                break;
+
+            case ModelStatus.Active:
+                var deactivateBtn = new Button
+                {
+                    Text = "Deactivate",
+                    CustomMinimumSize = new Vector2(90, 30)
+                };
+                deactivateBtn.Pressed += () => _modelManager?.SetActiveModel(null);
+                buttonsHbox.AddChild(deactivateBtn);
+                break;
+        }
+
+        return card;
+    }
+
+    private async void StartDownload(string modelId)
+    {
+        if (_modelManager == null) return;
+
+        var progress = new Progress<DownloadProgress>(p =>
+        {
+            // Progress updates will trigger RefreshAIModelsPanel via events
+            var percent = p.TotalBytes > 0 ? (double)p.BytesDownloaded / p.TotalBytes * 100 : 0;
+            GD.Print($"Download progress: {p.BytesDownloaded}/{p.TotalBytes} ({percent:F1}%)");
+        });
+
+        try
+        {
+            await _modelManager.DownloadAsync(modelId, progress);
+            GD.Print($"Model {modelId} downloaded successfully");
+
+            // Auto-activate if it's the first model
+            if (_modelManager.ActiveModelId == null)
+            {
+                _modelManager.SetActiveModel(modelId);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            GD.Print($"Download of {modelId} was cancelled");
+        }
+        catch (System.Exception ex)
+        {
+            GD.PrintErr($"Download failed: {ex.Message}");
+        }
+    }
+
+    private void UpdateStorageLabel(Label label)
+    {
+        if (_modelManager == null) return;
+        var totalSize = _modelManager.GetTotalDownloadedSize();
+        label.Text = $"Total storage used: {FormatSize(totalSize)}";
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        const double GB = 1_000_000_000;
+        const double MB = 1_000_000;
+
+        if (bytes >= GB)
+            return $"{bytes / GB:F1} GB";
+        if (bytes >= MB)
+            return $"{bytes / MB:F0} MB";
+        return $"{bytes / 1000:F0} KB";
     }
 }
