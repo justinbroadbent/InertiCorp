@@ -57,8 +57,25 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Debug Godot environment
+        run: |
+          Write-Host "GODOT env var: $env:GODOT"
+          Write-Host "GODOT4 env var: $env:GODOT4"
+          Write-Host "Checking if binary exists..."
+          if (Test-Path $env:GODOT) {
+            Write-Host "Binary found at: $env:GODOT"
+            Get-Item $env:GODOT | Format-List
+          } else {
+            Write-Host "Binary NOT found at: $env:GODOT"
+          }
+          Write-Host "Testing direct execution:"
+          & $env:GODOT --version
+        shell: pwsh
+
       - name: Generate .NET bindings
-        run: godot --headless --path src/InertiCorp.Game --build-solutions --quit
+        run: |
+          & $env:GODOT --headless --path src/InertiCorp.Game --build-solutions --quit
+        shell: pwsh
         continue-on-error: true
 
       - name: Build .NET project
@@ -75,12 +92,17 @@ jobs:
 
       - name: Export Game
         run: |
-          Write-Host "Exporting to: ${{ github.workspace }}\build\InertiCorp.exe"
+          $godot = $env:GODOT
+          Write-Host "Using Godot binary: $godot"
           Write-Host "Godot version:"
-          godot --version
-          Write-Host "Starting export..."
-          godot --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}\build\InertiCorp.exe" 2>&1
-          Write-Host "Export command completed with exit code: $LASTEXITCODE"
+          & $godot --version
+          Write-Host "Starting export to: ${{ github.workspace }}\build\InertiCorp.exe"
+          & $godot --headless --verbose --path src/InertiCorp.Game --export-release "Windows Desktop" "${{ github.workspace }}\build\InertiCorp.exe" 2>&1
+          $exitCode = $LASTEXITCODE
+          Write-Host "Export completed with exit code: $exitCode"
+          if ($exitCode -ne 0) {
+            Write-Host "Export may have failed!"
+          }
         shell: pwsh
         continue-on-error: true
 
