@@ -34,23 +34,80 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
 
-  build-and-release:
-    name: Build & Release (${{ matrix.platform }})
+  build-windows:
+    name: Build Windows Release
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.5.1
+          use-dotnet: true
+          include-templates: true
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Generate .NET bindings
+        run: godot --headless --path src/InertiCorp.Game --build-solutions --quit
+        continue-on-error: true
+
+      - name: Build .NET project
+        run: dotnet build --configuration Release
+
+      - name: Create build directory
+        run: New-Item -ItemType Directory -Force -Path build
+        shell: pwsh
+
+      - name: Export Game
+        run: godot --headless --path src/InertiCorp.Game --export-release "Windows Desktop" "../../build/InertiCorp.exe"
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path build\* -DestinationPath "InertiCorp-${{ steps.version.outputs.VERSION }}-Windows.zip"
+        shell: pwsh
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Update version in installer script
+        run: |
+          $content = Get-Content installer/InertiCorp.iss -Raw
+          $content = $content -replace '#define MyAppVersion ".*"', '#define MyAppVersion "${{ steps.version.outputs.VERSION }}"'
+          Set-Content installer/InertiCorp.iss $content
+        shell: pwsh
+
+      - name: Build Installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /O"." /F"InertiCorp-${{ steps.version.outputs.VERSION }}-Setup" installer/InertiCorp.iss
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            InertiCorp-${{ steps.version.outputs.VERSION }}-Windows.zip
+            InertiCorp-${{ steps.version.outputs.VERSION }}-Setup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    name: Build Linux Release
     needs: test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: Windows
-            export-preset: "Windows Desktop"
-            artifact-name: InertiCorp-Windows.exe
-            export-path: build/InertiCorp.exe
-          - platform: Linux
-            export-preset: "Linux"
-            artifact-name: InertiCorp-Linux.x86_64
-            export-path: build/InertiCorp.x86_64
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,15 +137,20 @@ jobs:
         run: mkdir -p build
 
       - name: Export Game
-        run: |
-          godot --headless --path src/InertiCorp.Game --export-release "${{ matrix.export-preset }}" "../../${{ matrix.export-path }}"
+        run: godot --headless --path src/InertiCorp.Game --export-release "Linux" "../../build/InertiCorp.x86_64"
 
-      - name: Rename artifact
-        run: mv "${{ matrix.export-path }}" "build/${{ matrix.artifact-name }}"
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create tarball
+        run: |
+          cd build
+          tar -czvf "../InertiCorp-${{ steps.version.outputs.VERSION }}-Linux.tar.gz" *
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: build/${{ matrix.artifact-name }}
+          files: InertiCorp-${{ steps.version.outputs.VERSION }}-Linux.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
