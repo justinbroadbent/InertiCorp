@@ -305,6 +305,7 @@ public sealed class LlmEmailService : IDisposable
         bool isResolution = false,
         string? choiceLabel = null,
         string? outcomeTier = null,
+        string? effects = null,
         CancellationToken ct = default)
     {
         if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
@@ -312,7 +313,7 @@ public sealed class LlmEmailService : IDisposable
 
         try
         {
-            var prompt = BuildCrisisPrompt(crisisTitle, crisisDescription, isResolution, choiceLabel, outcomeTier);
+            var prompt = BuildCrisisPrompt(crisisTitle, crisisDescription, isResolution, choiceLabel, outcomeTier, effects);
             var executor = new StatelessExecutor(_model, _modelParams);
             var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
 
@@ -385,21 +386,40 @@ public sealed class LlmEmailService : IDisposable
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
 
-    private string BuildCrisisPrompt(string crisisTitle, string crisisDescription, bool isResolution, string? choiceLabel, string? outcomeTier)
+    private string BuildCrisisPrompt(string crisisTitle, string crisisDescription, bool isResolution, string? choiceLabel, string? outcomeTier, string? effects = null)
     {
         // Concise prompts to reduce tokens
-        string userPrompt = isResolution
-            ? $"""
+        string userPrompt;
+
+        if (isResolution)
+        {
+            var effectsLine = !string.IsNullOrEmpty(effects)
+                ? $"\nResult: {effects}"
+                : "";
+
+            var outcomeDesc = outcomeTier switch
+            {
+                "Good" => "went better than expected",
+                "Bad" => "had complications",
+                _ => "met expectations"
+            };
+
+            userPrompt = $"""
                 Write a satirical 50-70 word corporate email about crisis resolution.
                 Crisis: {crisisTitle} - {crisisDescription}
-                Action: {choiceLabel ?? "handled it"} | Outcome: {outcomeTier ?? "Expected"}
-                Style: Corporate doublespeak, stressed manager. Body only.
-                """
-            : $"""
+                Action taken: {choiceLabel ?? "handled it"}
+                Outcome: {outcomeDesc}{effectsLine}
+                Style: Corporate doublespeak, stressed manager relieved it's over. Reference the specific action and outcome. Body only.
+                """;
+        }
+        else
+        {
+            userPrompt = $"""
                 Write a satirical 50-70 word URGENT corporate email about a crisis.
                 Crisis: {crisisTitle} - {crisisDescription}
                 Style: Panicked manager, excessive urgency. Body only.
                 """;
+        }
 
         var systemPrompt = "Satirical corporate crisis writer. Panic through corporate speak. Body only.";
 

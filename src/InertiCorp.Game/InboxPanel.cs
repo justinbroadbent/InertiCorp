@@ -651,7 +651,7 @@ public partial class InboxPanel : PanelContainer
             { "recipient", recipient }
         };
 
-        ProjectQueuePanel.QueueExternalAiRequest(
+        BackgroundEmailProcessor.QueueExternalAiRequest(
             requestId,
             subject,  // Title = subject
             body,     // Description = CEO's message

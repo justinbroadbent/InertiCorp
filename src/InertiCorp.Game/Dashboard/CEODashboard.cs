@@ -118,6 +118,9 @@ public partial class CEODashboard : Control
             _gameManager.PhaseChanged += OnPhaseChanged;
         }
 
+        // Connect to background processor signals for email notifications
+        ConnectBackgroundProcessorSignals();
+
         UpdateDashboard();
 
         // Show first-run AI model setup dialog if needed
@@ -126,6 +129,28 @@ public partial class CEODashboard : Control
             // Use CallDeferred to ensure scene tree is fully ready
             CallDeferred(MethodName.ShowFirstRunDialog);
         }
+    }
+
+    private void ConnectBackgroundProcessorSignals()
+    {
+        var processor = BackgroundEmailProcessor.Instance;
+        if (processor != null)
+        {
+            processor.ProjectReady += OnProjectReady;
+            processor.CrisisReady += OnCrisisReady;
+        }
+    }
+
+    private void OnProjectReady(string cardId)
+    {
+        GD.Print($"[Dashboard] Project email ready: {cardId}");
+        _gameManager?.EmitSignal(GameManager.SignalName.StateChanged);
+    }
+
+    private void OnCrisisReady(string eventId)
+    {
+        GD.Print($"[Dashboard] Crisis email ready: {eventId}");
+        _gameManager?.EmitSignal(GameManager.SignalName.StateChanged);
     }
 
     private void ShowFirstRunDialog()
@@ -1234,20 +1259,9 @@ public partial class CEODashboard : Control
         var spacer = new Control { SizeFlagsVertical = SizeFlags.ExpandFill };
         mainVbox.AddChild(spacer);
 
-        // Project queue panel at bottom
+        // Project queue panel at bottom (displays active projects from BackgroundEmailProcessor)
         _projectQueuePanel = new ProjectQueuePanel();
-        _projectQueuePanel.ProjectCompleted += OnProjectCompleted;
         mainVbox.AddChild(_projectQueuePanel);
-    }
-
-    private void OnProjectCompleted(string cardId)
-    {
-        // Project completed - card was already played in TryAddProject,
-        // AI content already generated. Just emit StateChanged to show the email.
-        GD.Print($"[Dashboard] Project completed: {cardId}, email now visible");
-
-        // Emit StateChanged to refresh UI and show the now-visible email
-        _gameManager?.EmitSignal(GameManager.SignalName.StateChanged);
     }
 
     private void BuildInboxCenterPanel(HBoxContainer parent)
@@ -1942,7 +1956,7 @@ public partial class CEODashboard : Control
             { "recipient", recipient }
         };
 
-        ProjectQueuePanel.QueueExternalAiRequest(
+        BackgroundEmailProcessor.QueueExternalAiRequest(
             requestId,
             subject,  // Title = subject
             body,     // Description = CEO's message
@@ -2401,12 +2415,9 @@ public partial class CEODashboard : Control
 
         var inbox = state.Inbox;
 
-        // Get pending thread IDs (emails waiting for AI content)
-        var pendingThreadIds = _projectQueuePanel?.PendingThreadIds ?? new HashSet<string>();
-
-        // All threads - filter out pending (but never hide Crisis threads), then sort
+        // All threads - sort by priority and read status
+        // With background processing, emails only appear when content is ready (no hiding needed)
         var threads = inbox.AllThreadsOrdered
-            .Where(t => t.IsCrisis || !pendingThreadIds.Contains(t.ThreadId))  // Always show crisis, hide other pending
             .OrderByDescending(t => t.IsHighPriority && !t.IsFullyRead)  // High priority unread first (response required)
             .ThenByDescending(t => !t.IsFullyRead)  // Then other unread
             .ThenByDescending(t => t.SequenceNumber)  // Then by most recent activity
@@ -3645,7 +3656,7 @@ public partial class CEODashboard : Control
 
                 // Check for pending crises that must be resolved first
                 var hasPendingCrisis = _gameManager?.HasPendingCrisis ?? false;
-                var hasActiveProjects = _projectQueuePanel?.HasActiveProjects ?? false;
+                var hasActiveProjects = BackgroundEmailProcessor.Instance?.HasActiveProjects ?? false;
 
                 // End phase button with restraint bonus preview
                 var endText = restraintBonus > 0
@@ -4221,12 +4232,13 @@ public partial class CEODashboard : Control
         var state = _gameManager.CurrentState;
         var card = state?.Hand.Cards.FirstOrDefault(c => c.CardId == cardId);
 
-        // If we can add to project queue, the card is played immediately there
-        // but the email is hidden until AI content is generated
-        if (card != null && _projectQueuePanel != null && !_projectQueuePanel.IsFull)
+        // Check if we can use background processing
+        var processor = BackgroundEmailProcessor.Instance;
+        if (card != null && processor != null && !processor.IsFull)
         {
-            // TryAddProject plays the card and starts AI generation
-            _projectQueuePanel.TryAddProject(card);
+            // Queue for background processing - card removed from hand,
+            // outcome + AI content generated in background, email appears when ready
+            _gameManager.QueueProjectCard(cardId);
 
             // Track total cards played for reports
             _totalCardsPlayed++;
@@ -4236,7 +4248,7 @@ public partial class CEODashboard : Control
         }
         else
         {
-            // No queue available or full - play immediately as before
+            // No processor available or full - play immediately as before
             _gameManager.PlayCard(cardId, endPhaseAfter: false);
             _totalCardsPlayed++;
         }

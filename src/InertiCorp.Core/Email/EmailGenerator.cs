@@ -1449,4 +1449,18 @@ public sealed class EmailGenerator
             Messages: new[] { message },
             ThreadType: EmailThreadType.Notification);
     }
+
+    /// <summary>
+    /// Generates fallback body content for a project when AI generation fails.
+    /// </summary>
+    public string GenerateFallbackProjectBody(OutcomeTier outcome)
+    {
+        return outcome switch
+        {
+            OutcomeTier.Good => "The project exceeded expectations. All KPIs are trending positively and stakeholder feedback has been overwhelmingly positive. The team delivered ahead of schedule with quality metrics above target.",
+            OutcomeTier.Expected => "The project completed within acceptable parameters. While there were some minor hiccups along the way, the core deliverables were met and the team maintained professional standards throughout.",
+            OutcomeTier.Bad => "The project encountered significant challenges. Despite the team's efforts, we fell short of several key milestones. A retrospective has been scheduled to identify learnings for future initiatives.",
+            _ => "Project status update has been filed with the appropriate documentation."
+        };
+    }
 }

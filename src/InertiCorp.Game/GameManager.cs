@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using Godot;
 using InertiCorp.Core;
+using InertiCorp.Core.Cards;
 using InertiCorp.Core.Content;
 using InertiCorp.Core.Email;
 using InertiCorp.Core.Llm;
@@ -92,8 +94,16 @@ public partial class GameManager : Node
     public override void _Ready()
     {
         InitializeMusicManager();
+        InitializeBackgroundProcessor();
         InitializeLlmService();
         StartNewGame();
+    }
+
+    private void InitializeBackgroundProcessor()
+    {
+        var processor = new BackgroundEmailProcessor();
+        AddChild(processor);
+        processor.Initialize(this);
     }
 
     private void InitializeMusicManager()
@@ -451,6 +461,159 @@ public partial class GameManager : Node
     }
 
     /// <summary>
+    /// Queues a project card for background processing.
+    /// The card is removed from hand immediately, but effects are deferred until processing completes.
+    /// </summary>
+    public void QueueProjectCard(string cardId)
+    {
+        if (CurrentState is null) return;
+        if (CurrentState.Quarter.Phase != GamePhase.PlayCards) return;
+
+        // Check that the card is actually in the hand
+        if (!CurrentState.Hand.Contains(cardId))
+        {
+            GD.PrintErr($"[GameManager] Card {cardId} not found in hand");
+            return;
+        }
+
+        // Get the card before removing from hand
+        var card = CurrentState.Hand.Cards.FirstOrDefault(c => c.CardId == cardId);
+        if (card == null) return;
+
+        // Remove card from hand but don't play it yet
+        var newHand = CurrentState.Hand.WithCardRemoved(cardId);
+        CurrentState = CurrentState.WithHand(newHand);
+
+        // Queue for background processing
+        BackgroundEmailProcessor.Instance?.QueueProject(card);
+
+        GD.Print($"[GameManager] Queued project for background processing: {card.Title}");
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Finalizes a project that was processed in the background.
+    /// Called by BackgroundEmailProcessor when AI content is ready.
+    /// This plays the card through the normal engine flow, then updates email with AI content.
+    /// </summary>
+    public void FinalizeQueuedProject(string cardId, string? aiContent)
+    {
+        if (CurrentState is null || _rng is null) return;
+
+        GD.Print($"[GameManager] Finalizing queued project: {cardId}");
+
+        // Get the original card from BackgroundEmailProcessor
+        var card = BackgroundEmailProcessor.Instance?.GetQueuedCard(cardId);
+        if (card == null)
+        {
+            GD.PrintErr($"[GameManager] Queued card not found: {cardId}");
+            return;
+        }
+
+        // Add the card back to hand temporarily so PlayQueuedCard can find it
+        var tempHand = CurrentState.Hand.WithCardAdded(card);
+        CurrentState = CurrentState.WithHand(tempHand);
+
+        // Play through normal flow - this creates the email and defers effects
+        PlayQueuedCard(cardId);
+
+        // Update the email with AI content if available
+        if (!string.IsNullOrEmpty(aiContent))
+        {
+            var thread = CurrentState.Inbox.GetThreadForCard(cardId);
+            if (thread != null)
+            {
+                UpdateThreadWithAiContent(thread.ThreadId, aiContent);
+            }
+        }
+
+        // Apply deferred effects immediately (since we're in background completion)
+        ApplyDeferredEffects(cardId);
+
+        GD.Print($"[GameManager] Project finalized with effects: {cardId}");
+    }
+
+    /// <summary>
+    /// Activates a crisis that was processed in the background.
+    /// Called by BackgroundEmailProcessor when AI content is ready.
+    /// </summary>
+    public void ActivateCrisis(string eventId, string title, string description,
+        int quarterNumber, string? originatingThreadId, string? aiContent)
+    {
+        if (CurrentState is null || _rng is null) return;
+
+        GD.Print($"[GameManager] Activating crisis: {title}");
+
+        // Get crisis cards from the event deck to find a matching one or create one
+        var (newDecks, crisisCard) = CurrentState.EventDecks.DrawCrisis(_rng);
+
+        // If the drawn card doesn't match, create one from the provided data
+        // This handles cases where we pre-generated content for a specific crisis
+        if (crisisCard.EventId != eventId)
+        {
+            // Use the drawn card but it won't match the pre-generated content
+            // In practice, this shouldn't happen often
+            GD.Print($"[GameManager] Crisis mismatch: expected {eventId}, got {crisisCard.EventId}");
+        }
+
+        CurrentState = CurrentState.WithEventDecks(newDecks);
+
+        // Create the crisis email with AI content or fallback
+        var emailGen = new Core.Email.EmailGenerator(_rng.NextInt(0, int.MaxValue));
+        var inbox = CurrentState.Inbox;
+
+        if (!string.IsNullOrEmpty(originatingThreadId) && inbox.GetThread(originatingThreadId) is not null)
+        {
+            // Add as follow-up to originating thread
+            var originThread = inbox.GetThread(originatingThreadId)!;
+            var followUp = emailGen.CreateFollowUpReply(
+                originatingThreadId,
+                originThread.Subject,
+                !string.IsNullOrEmpty(aiContent) ? aiContent : $"URGENT: {crisisCard.Title}\n\n{crisisCard.Description}",
+                Array.Empty<(Meter, int)>(),
+                quarterNumber,
+                CurrentState.Org.Alignment,
+                Core.Email.SenderArchetype.HR);
+            inbox = inbox.WithFollowUpAdded(originatingThreadId, followUp);
+            inbox = inbox.WithThreadUpgradedToCrisis(originatingThreadId, crisisCard.EventId);
+        }
+        else
+        {
+            // Create standalone crisis thread
+            var crisisThread = emailGen.CreateCrisisThread(
+                crisisCard,
+                quarterNumber,
+                CurrentState.Org.Alignment,
+                CurrentState.CEO.BoardPressureLevel,
+                CurrentState.CEO.EvilScore);
+
+            // If we have AI content, update the thread body
+            if (!string.IsNullOrEmpty(aiContent))
+            {
+                var updatedThread = crisisThread with
+                {
+                    Messages = crisisThread.Messages.Select((m, i) => i == 0
+                        ? m with { Body = aiContent }
+                        : m).ToImmutableArray()
+                };
+                inbox = inbox.WithThreadAdded(updatedThread);
+            }
+            else
+            {
+                inbox = inbox.WithThreadAdded(crisisThread);
+            }
+        }
+
+        // Set the crisis as active
+        CurrentState = CurrentState
+            .WithInbox(inbox)
+            .WithCurrentCrisis(crisisCard);
+
+        GD.Print($"[GameManager] Crisis activated: {crisisCard.Title}");
+        EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
     /// Ends the play cards phase without playing more cards.
     /// </summary>
     public void EndPlayCardsPhase()
@@ -689,6 +852,26 @@ public partial class GameManager : Node
 
         var newInbox = CurrentState.Inbox.WithThreadReplaced(threadId, updatedThread);
         CurrentState = CurrentState.WithInbox(newInbox);
+    }
+
+    /// <summary>
+    /// Updates the body of the latest message in a thread with AI-generated content.
+    /// </summary>
+    public void UpdateThreadWithAiContent(string threadId, string aiContent)
+    {
+        if (CurrentState is null) return;
+
+        var thread = CurrentState.Inbox.GetThread(threadId);
+        if (thread == null) return;
+
+        // Update the last message body with AI content
+        var updatedMessages = thread.Messages.Select((m, i) =>
+            i == thread.Messages.Count - 1
+                ? m with { Body = aiContent }
+                : m).ToList();
+
+        var updatedThread = thread with { Messages = updatedMessages };
+        UpdateThread(threadId, updatedThread);
     }
 
     /// <summary>
@@ -939,6 +1122,28 @@ public partial class GameManager : Node
             context = new Dictionary<string, string>();
             if (choiceLabel is not null) context["choiceLabel"] = choiceLabel;
             if (outcomeTier is not null) context["outcomeTier"] = outcomeTier;
+
+            // Add effects description for better AI context
+            if (pendingResolution is not null)
+            {
+                var effectsList = new List<string>();
+                foreach (var (meter, delta) in pendingResolution.MeterDeltas)
+                {
+                    if (delta != 0)
+                    {
+                        var sign = delta > 0 ? "+" : "";
+                        effectsList.Add($"{meter}: {sign}{delta}");
+                    }
+                }
+                if (pendingResolution.EvilScoreDelta > 0)
+                {
+                    effectsList.Add($"Evil Score: +{pendingResolution.EvilScoreDelta}");
+                }
+                if (effectsList.Count > 0)
+                {
+                    context["effects"] = string.Join(", ", effectsList);
+                }
+            }
         }
 
         // Store pending resolution info so we can create the email when AI completes
@@ -950,7 +1155,7 @@ public partial class GameManager : Node
         GD.Print($"[GameManager] Queueing crisis AI generation: {crisisTitle} (priority: {priority})");
 
         // Use shared AI queue - email created only when AI completes
-        ProjectQueuePanel.QueueExternalAiRequest(
+        BackgroundEmailProcessor.QueueExternalAiRequest(
             threadId,
             crisisTitle,
             crisisDescription,
@@ -1010,11 +1215,9 @@ public partial class GameManager : Node
 
     /// <summary>
     /// Whether there's an unresolved crisis that must be handled before ending the phase.
-    /// Only returns true if we're in Crisis phase (where the crisis email has been generated).
+    /// Returns true if there's an active crisis that needs a response.
     /// </summary>
-    public bool HasPendingCrisis =>
-        CurrentState?.CurrentCrisis is not null &&
-        CurrentState?.Quarter.Phase == GamePhase.Crisis;
+    public bool HasPendingCrisis => CurrentState?.CurrentCrisis is not null;
 
     /// <summary>
     /// Responds to a pending crisis (from any phase).
