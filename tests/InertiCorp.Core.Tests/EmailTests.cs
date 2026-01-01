@@ -20,7 +20,12 @@ public class EmailMessageTests
     {
         var msg = CreateTestMessage(from: SenderArchetype.EngManager);
 
-        Assert.Contains("Engineering Director", msg.FromDisplay);
+        // FromDisplay should be "Name, Title" format from company directory
+        Assert.Contains(",", msg.FromDisplay);
+        // Should contain an engineering-related title
+        Assert.True(
+            msg.FromDisplay.Contains("Engineering") || msg.FromDisplay.Contains("VP"),
+            $"Expected engineering title, got: {msg.FromDisplay}");
     }
 
     [Fact]
