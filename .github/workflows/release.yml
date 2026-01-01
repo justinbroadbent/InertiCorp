@@ -72,6 +72,10 @@ jobs:
       - name: Build .NET project
         run: dotnet build --configuration Release
 
+      - name: Publish .NET project for export
+        run: |
+          dotnet publish src/InertiCorp.Game/InertiCorp.Game.csproj -c Release --no-self-contained -r win-x64 -o src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease
+
       - name: Get version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -162,6 +166,10 @@ jobs:
 
       - name: Build .NET project
         run: dotnet build --configuration Release
+
+      - name: Publish .NET project for export
+        run: |
+          dotnet publish src/InertiCorp.Game/InertiCorp.Game.csproj -c Release --no-self-contained -r linux-x64 -o src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease
 
       - name: Create build directory
         run: mkdir -p build
