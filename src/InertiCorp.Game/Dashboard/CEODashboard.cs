@@ -2404,9 +2404,9 @@ public partial class CEODashboard : Control
         // Get pending thread IDs (emails waiting for AI content)
         var pendingThreadIds = _projectQueuePanel?.PendingThreadIds ?? new HashSet<string>();
 
-        // All threads - filter out pending, then sort
+        // All threads - filter out pending (but never hide Crisis threads), then sort
         var threads = inbox.AllThreadsOrdered
-            .Where(t => !pendingThreadIds.Contains(t.ThreadId))  // Hide pending emails
+            .Where(t => t.IsCrisis || !pendingThreadIds.Contains(t.ThreadId))  // Always show crisis, hide other pending
             .OrderByDescending(t => t.IsHighPriority && !t.IsFullyRead)  // High priority unread first (response required)
             .ThenByDescending(t => !t.IsFullyRead)  // Then other unread
             .ThenByDescending(t => t.SequenceNumber)  // Then by most recent activity
