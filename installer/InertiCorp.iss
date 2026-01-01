@@ -3,7 +3,7 @@
 
 #define MyAppName "InertiCorp"
 #define MyAppVersion "0.1.0"
-#define MyAppPublisher "InertiCorp Holdings, LLC"
+#define MyAppPublisher "Artificially Irreverent"
 #define MyAppURL "https://github.com/justinbroadbent/InertiCorp"
 #define MyAppExeName "InertiCorp.exe"
 
