@@ -263,17 +263,43 @@ public partial class ProjectQueuePanel : PanelContainer
             GD.Print($"[ProjectQueue] Card {card.CardId} played, thread {thread.ThreadId} marked pending");
         }
 
-        // Get the outcome from the log
+        // Get the outcome and result details from the log
         var outcome = _gameManager.LastLog?.Entries
             .FirstOrDefault(e => e.OutcomeTier != null)?.OutcomeTier;
+
+        // Extract profit impact from log entries (e.g., "Profit impact: +$15M")
+        string? profitImpact = null;
+        var profitEntry = _gameManager.LastLog?.Entries
+            .FirstOrDefault(e => e.Message.StartsWith("Profit impact:"));
+        if (profitEntry != null)
+        {
+            profitImpact = profitEntry.Message.Replace("Profit impact: ", "");
+        }
+
+        // Extract meter changes from log entries
+        var meterChanges = _gameManager.LastLog?.Entries
+            .Where(e => e.Category == InertiCorp.Core.LogCategory.MeterChange)
+            .Select(e => $"{e.Meter}: {(e.Delta >= 0 ? "+" : "")}{e.Delta}")
+            .ToList() ?? new List<string>();
+
+        // Build additional context for LLM
+        var additionalContext = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(profitImpact))
+        {
+            additionalContext["profit"] = profitImpact;
+        }
+        if (meterChanges.Count > 0)
+        {
+            additionalContext["effects"] = string.Join(", ", meterChanges);
+        }
 
         // Create UI for this project
         var container = CreateProjectUI(entry);
         entry.Container = container;
         _projectsContainer?.AddChild(container);
 
-        // Start real AI generation with known outcome
-        TriggerAiGeneration(card, outcome?.ToString() ?? "Expected");
+        // Start real AI generation with known outcome and results
+        TriggerAiGeneration(card, outcome?.ToString() ?? "Expected", additionalContext);
 
         UpdateHeader();
         UpdateVisibility();
@@ -298,14 +324,14 @@ public partial class ProjectQueuePanel : PanelContainer
         project?.MarkAiResponse(succeeded);
     }
 
-    private void TriggerAiGeneration(PlayableCard card, string outcomeText)
+    private void TriggerAiGeneration(PlayableCard card, string outcomeText, Dictionary<string, string>? additionalContext = null)
     {
         // Queue the request - AI generation runs serially to avoid GPU contention
         lock (_queueLock)
         {
             var request = new AiGenerationRequest(
                 card.CardId, card.Title, card.Description, outcomeText,
-                AiPriority.High, AiPromptType.ProjectCard);
+                AiPriority.High, AiPromptType.ProjectCard, null, additionalContext);
 
             _aiQueue.Add(request);
             // Sort by priority (lower enum value = higher priority)
@@ -369,11 +395,15 @@ public partial class ProjectQueuePanel : PanelContainer
                 switch (request.PromptType)
                 {
                     case AiPromptType.ProjectCard:
-                        GD.Print($"[ProjectQueue] Generating project email for {request.Title} ({request.OutcomeText})");
+                        var profit = request.AdditionalContext?.GetValueOrDefault("profit");
+                        var effects = request.AdditionalContext?.GetValueOrDefault("effects");
+                        GD.Print($"[ProjectQueue] Generating project email for {request.Title} ({request.OutcomeText}, profit: {profit ?? "n/a"})");
                         aiBody = await emailService?.GenerateCardEmailAsync(
                             request.Title,
                             request.Description,
                             request.OutcomeText,
+                            profit,
+                            effects,
                             CancellationToken.None) ?? null;
                         break;
 
@@ -565,6 +595,70 @@ public partial class ProjectQueuePanel : PanelContainer
         statusLabel.Modulate = new Color(0.5f, 0.5f, 0.55f);
         entry.StatusLabel = statusLabel;
         container.AddChild(statusLabel);
+
+        // Hover expansion drawer - shows full details on hover
+        var drawerPanel = new PanelContainer
+        {
+            Visible = false,
+            Name = "DrawerPanel"
+        };
+        var drawerStyle = new StyleBoxFlat
+        {
+            BgColor = new Color(0.12f, 0.13f, 0.16f),
+            BorderWidthLeft = 2,
+            BorderWidthRight = 0,
+            BorderWidthTop = 0,
+            BorderWidthBottom = 0,
+            BorderColor = new Color(0.3f, 0.5f, 0.4f, 0.8f),
+            ContentMarginLeft = 8,
+            ContentMarginRight = 4,
+            ContentMarginTop = 4,
+            ContentMarginBottom = 4
+        };
+        drawerPanel.AddThemeStyleboxOverride("panel", drawerStyle);
+
+        var drawerContent = new VBoxContainer();
+        drawerContent.AddThemeConstantOverride("separation", 4);
+        drawerPanel.AddChild(drawerContent);
+
+        // Full title in drawer
+        var fullTitle = new Label
+        {
+            Text = entry.Title,
+            AutowrapMode = TextServer.AutowrapMode.Word
+        };
+        fullTitle.AddThemeFontSizeOverride("font_size", 10);
+        fullTitle.Modulate = new Color(0.9f, 0.9f, 0.95f);
+        drawerContent.AddChild(fullTitle);
+
+        // Description in drawer
+        var descLabel = new Label
+        {
+            Text = entry.Description,
+            AutowrapMode = TextServer.AutowrapMode.Word
+        };
+        descLabel.AddThemeFontSizeOverride("font_size", 9);
+        descLabel.Modulate = new Color(0.7f, 0.7f, 0.75f);
+        drawerContent.AddChild(descLabel);
+
+        container.AddChild(drawerPanel);
+
+        // Store references for hover handling
+        var titleLabelRef = titleLabel;
+        var drawerRef = drawerPanel;
+        var fullTitleStr = entry.Title;
+
+        // Hover event handlers
+        container.MouseEntered += () =>
+        {
+            drawerRef.Visible = true;
+            titleLabelRef.Text = fullTitleStr; // Show full title when hovered
+        };
+        container.MouseExited += () =>
+        {
+            drawerRef.Visible = false;
+            titleLabelRef.Text = TruncateText(fullTitleStr, 22); // Back to truncated
+        };
 
         return container;
     }

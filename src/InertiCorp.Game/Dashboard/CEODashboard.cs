@@ -2787,8 +2787,9 @@ public partial class CEODashboard : Control
         var spacer = new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = Control.MouseFilterEnum.Ignore };
         headerRow.AddChild(spacer);
 
-        // Delete button (trash icon) - only for non-crisis threads
-        if (thread.ThreadType != EmailThreadType.Crisis || thread.IsFullyRead)
+        // Delete button (trash icon) - hide for active crisis threads that need response
+        // Once a crisis is resolved (no longer CurrentCrisis), the thread can be trashed
+        if (!IsActiveCrisisThread(thread))
         {
             var deleteBtn = new Button
             {
@@ -2892,6 +2893,39 @@ public partial class CEODashboard : Control
         btn.Pressed += () => ShowEmailThread(threadCopy);
 
         return btn;
+    }
+
+    /// <summary>
+    /// Navigate to the unresolved crisis thread in the inbox.
+    /// Call this when the user clicks "Resolve Situation First".
+    /// </summary>
+    private void NavigateToUnresolvedCrisis()
+    {
+        if (_gameManager?.CurrentState?.CurrentCrisis is null) return;
+
+        var inbox = _gameManager.CurrentState.Inbox;
+        var crisisEventId = _gameManager.CurrentState.CurrentCrisis.EventId;
+
+        // Find the crisis thread that matches the current crisis
+        var crisisThread = inbox.AllThreadsOrdered
+            .FirstOrDefault(t => t.ThreadType == EmailThreadType.Crisis &&
+                                  t.OriginatingCardId == crisisEventId);
+
+        if (crisisThread is not null)
+        {
+            ShowEmailThread(crisisThread);
+        }
+    }
+
+    /// <summary>
+    /// Check if the given thread is the currently active crisis that requires a response.
+    /// </summary>
+    private bool IsActiveCrisisThread(EmailThread thread)
+    {
+        if (_gameManager?.CurrentState?.CurrentCrisis is null) return false;
+        if (thread.ThreadType != EmailThreadType.Crisis) return false;
+
+        return thread.OriginatingCardId == _gameManager.CurrentState.CurrentCrisis.EventId;
     }
 
     private void ShowEmailThread(EmailThread thread)
@@ -3534,11 +3568,11 @@ public partial class CEODashboard : Control
                 {
                     _actionHeader.Text = "⚠ SITUATION REQUIRES ATTENTION";
                     _actionDescription.Text = "[center][color=#ff8080]There's an urgent situation in your inbox that requires a response before the board review.[/color]\n\n" +
-                        "Check your inbox and respond to the highlighted situation.[/center]";
+                        "Click below to view the situation.[/center]";
 
-                    var blockedCrisisBtn = CreateActionButton("⚠ RESOLVE SITUATION FIRST", new Color(0.5f, 0.5f, 0.5f));
-                    blockedCrisisBtn.Disabled = true;
-                    _choicesContainer.AddChild(blockedCrisisBtn);
+                    var goToCrisisBtn = CreateActionButton("📧 GO TO SITUATION", new Color(1f, 0.6f, 0.4f));
+                    goToCrisisBtn.Pressed += NavigateToUnresolvedCrisis;
+                    _choicesContainer.AddChild(goToCrisisBtn);
                 }
                 else
                 {
@@ -3620,14 +3654,14 @@ public partial class CEODashboard : Control
 
                 if (hasPendingCrisis)
                 {
-                    // Show blocked button and warning
-                    var blockedBtn = CreateActionButton("⚠ RESOLVE SITUATION FIRST", new Color(0.5f, 0.5f, 0.5f));
-                    blockedBtn.Disabled = true;
-                    _choicesContainer.AddChild(blockedBtn);
+                    // Show clickable button to navigate to the crisis
+                    var goToCrisisBtn = CreateActionButton("📧 GO TO SITUATION", new Color(1f, 0.6f, 0.4f));
+                    goToCrisisBtn.Pressed += NavigateToUnresolvedCrisis;
+                    _choicesContainer.AddChild(goToCrisisBtn);
 
                     var warningLabel = new Label
                     {
-                        Text = "Check your inbox - there's an urgent situation requiring your response!",
+                        Text = "Resolve the urgent situation in your inbox before ending the phase.",
                         AutowrapMode = TextServer.AutowrapMode.Word
                     };
                     warningLabel.AddThemeFontSizeOverride("font_size", 10);
@@ -3751,14 +3785,14 @@ public partial class CEODashboard : Control
 
                 if (hasPendingResolutionCrisis)
                 {
-                    // Block until crisis is resolved via inbox
+                    // Show clickable button to navigate to the crisis
                     _actionHeader.Text = "⚠ SITUATION REQUIRES ATTENTION";
                     _actionDescription.Text = "[center][color=#ff8080]There's an urgent situation in your inbox that requires a response before the board review.[/color]\n\n" +
-                        "Check your inbox and respond to the highlighted situation.[/center]";
+                        "Click below to view and resolve the situation.[/center]";
 
-                    var blockedReviewBtn = CreateActionButton("⚠ RESOLVE SITUATION FIRST", new Color(0.5f, 0.5f, 0.5f));
-                    blockedReviewBtn.Disabled = true;
-                    _choicesContainer.AddChild(blockedReviewBtn);
+                    var goToCrisisBtn = CreateActionButton("📧 GO TO SITUATION", new Color(1f, 0.6f, 0.4f));
+                    goToCrisisBtn.Pressed += NavigateToUnresolvedCrisis;
+                    _choicesContainer.AddChild(goToCrisisBtn);
                 }
                 else if (state.CEO.CanRetire)
                 {

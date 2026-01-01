@@ -241,6 +241,8 @@ public sealed class LlmEmailService : IDisposable
         string cardTitle,
         string cardDescription,
         string outcomeTier,
+        string? profitImpact = null,
+        string? meterEffects = null,
         CancellationToken ct = default)
     {
         if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
@@ -248,7 +250,7 @@ public sealed class LlmEmailService : IDisposable
 
         try
         {
-            var prompt = BuildCardPrompt(cardTitle, cardDescription, outcomeTier);
+            var prompt = BuildCardPrompt(cardTitle, cardDescription, outcomeTier, profitImpact, meterEffects);
             var executor = new StatelessExecutor(_model, _modelParams);
             var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
 
@@ -266,17 +268,29 @@ public sealed class LlmEmailService : IDisposable
         }
     }
 
-    private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier)
+    private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier, string? profitImpact = null, string? meterEffects = null)
     {
-        // Concise prompt to reduce tokens and speed up inference
+        // Build results context from project execution
+        var resultsContext = new StringBuilder();
+        if (!string.IsNullOrEmpty(profitImpact))
+        {
+            resultsContext.Append($"Financial impact: {profitImpact}. ");
+        }
+        if (!string.IsNullOrEmpty(meterEffects))
+        {
+            resultsContext.Append($"Organization effects: {meterEffects}. ");
+        }
+
+        // Enhanced prompt with project results for more contextual responses
         var userPrompt = $"""
             Write a satirical 50-70 word corporate email about project results.
             Project: {cardTitle} - {cardDescription}
             Outcome: {outcomeTier}
-            Style: Passive-aggressive, darkly funny. Body only, no greeting/signature.
+            {(resultsContext.Length > 0 ? $"Results: {resultsContext}" : "")}
+            Style: Passive-aggressive, darkly funny. Reference the actual results if provided. Body only, no greeting/signature.
             """;
 
-        var systemPrompt = "Satirical corporate email writer. Passive-aggressive, darkly funny. Output body only.";
+        var systemPrompt = "Satirical corporate email writer. Passive-aggressive, darkly funny. Reference specific financial/organizational impacts when available. Output body only.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
