@@ -92,22 +92,27 @@ jobs:
           $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
           New-Item -ItemType Directory -Force -Path $dataDir
 
-          # Copy from the Godot mono temp directory
-          $monoDir = "src\InertiCorp.Game\.godot\mono\temp\bin\Release"
-          if (Test-Path $monoDir) {
-            Copy-Item "$monoDir\*" $dataDir -Recurse -Force
-            Write-Host "Copied assemblies from: $monoDir"
-          }
-
-          # Also check for ExportRelease directory
-          $exportDir = "src\InertiCorp.Game\.godot\mono\temp\bin\ExportRelease"
+          # The ExportRelease directory contains win-x64 subdirectory with all assemblies
+          # Copy the contents of win-x64 directly to the data directory (not the win-x64 folder itself)
+          $exportDir = "src\InertiCorp.Game\.godot\mono\temp\bin\ExportRelease\win-x64"
           if (Test-Path $exportDir) {
             Copy-Item "$exportDir\*" $dataDir -Recurse -Force
             Write-Host "Copied assemblies from: $exportDir"
+          } else {
+            Write-Host "ExportRelease\win-x64 not found, checking other locations..."
+
+            # Fallback to Release directory
+            $monoDir = "src\InertiCorp.Game\.godot\mono\temp\bin\Release"
+            if (Test-Path $monoDir) {
+              Copy-Item "$monoDir\*" $dataDir -Recurse -Force
+              Write-Host "Copied assemblies from: $monoDir"
+            }
           }
 
-          Write-Host "Data directory contents:"
-          Get-ChildItem $dataDir -Recurse | Select-Object FullName
+          Write-Host "Data directory file count:"
+          (Get-ChildItem $dataDir -File).Count
+          Write-Host "Sample files:"
+          Get-ChildItem $dataDir -File | Select-Object -First 10 Name
         shell: pwsh
 
       - name: List build directory
@@ -197,22 +202,27 @@ jobs:
           DATA_DIR="build/data_InertiCorp.Game_linuxbsd_x86_64"
           mkdir -p "$DATA_DIR"
 
-          # Copy from the Godot mono temp directory
-          MONO_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/Release"
-          if [ -d "$MONO_DIR" ]; then
-            cp -r "$MONO_DIR"/* "$DATA_DIR/" || true
-            echo "Copied assemblies from: $MONO_DIR"
-          fi
-
-          # Also check for ExportRelease directory
-          EXPORT_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease"
+          # The ExportRelease directory contains linux-x64 subdirectory with all assemblies
+          # Copy the contents directly (not the linux-x64 folder itself)
+          EXPORT_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/ExportRelease/linux-x64"
           if [ -d "$EXPORT_DIR" ]; then
-            cp -r "$EXPORT_DIR"/* "$DATA_DIR/" || true
+            cp -r "$EXPORT_DIR"/* "$DATA_DIR/"
             echo "Copied assemblies from: $EXPORT_DIR"
+          else
+            echo "ExportRelease/linux-x64 not found, checking other locations..."
+
+            # Fallback to Release directory
+            MONO_DIR="src/InertiCorp.Game/.godot/mono/temp/bin/Release"
+            if [ -d "$MONO_DIR" ]; then
+              cp -r "$MONO_DIR"/* "$DATA_DIR/" || true
+              echo "Copied assemblies from: $MONO_DIR"
+            fi
           fi
 
-          echo "Data directory contents:"
-          ls -la "$DATA_DIR"
+          echo "Data directory file count:"
+          ls -1 "$DATA_DIR" | wc -l
+          echo "Sample files:"
+          ls "$DATA_DIR" | head -10
 
       - name: Get version from tag
         id: version
