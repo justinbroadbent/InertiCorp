@@ -20,9 +20,36 @@
   <ItemGroup>
     <!-- LLM support for dynamic email generation -->
     <PackageReference Include="LLamaSharp" Version="0.25.0" />
-    <!-- CPU backend always included as fallback -->
-    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.25.0" />
-    <!-- CUDA backend for NVIDIA GPUs (optional, loaded if available) -->
+    <!-- CUDA12 backend for NVIDIA GPUs -->
+    <!-- NOTE: Do NOT add LLamaSharp.Backend.Cpu package - it conflicts with CUDA loading -->
+    <!-- However, ggml-cpu.dll IS required in cuda12 dir (copied via CopyCpuBackendToCuda12 target) -->
     <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.25.0" />
   </ItemGroup>
+
+  <!-- CUDA 12 Runtime DLLs for GPU acceleration (from llama.cpp releases) -->
+  <!-- These are required for CUDA to work without requiring users to install CUDA Toolkit -->
+  <!-- Copy to both: main output dir (for CUDA availability check) AND cuda12 native dir (for ggml-cuda.dll) -->
+  <ItemGroup>
+    <Content Include="native\cuda12\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+    </Content>
+    <Content Include="native\cuda12\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes\win-x64\native\cuda12\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+
+  <!-- Copy CPU backend to CUDA12 directory - required for modular backend architecture -->
+  <!-- The CUDA backend needs CPU backend available in the same directory -->
+  <Target Name="CopyCpuBackendToCuda12" AfterTargets="Build">
+    <PropertyGroup>
+      <Cuda12NativeDir>$(OutputPath)runtimes\win-x64\native\cuda12\</Cuda12NativeDir>
+      <Avx2NativeDir>$(OutputPath)runtimes\win-x64\native\avx2\</Avx2NativeDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(Avx2NativeDir)ggml-cpu.dll"
+          DestinationFolder="$(Cuda12NativeDir)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(Avx2NativeDir)ggml-cpu.dll') And Exists('$(Cuda12NativeDir)')" />
+  </Target>
 </Project>

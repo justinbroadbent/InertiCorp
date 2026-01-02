@@ -1,4 +1,5 @@
 using Godot;
+using InertiCorp.Core.Llm;
 
 namespace InertiCorp.Game.Settings;
 
@@ -46,7 +47,7 @@ public partial class SettingsMenu : Control
         // Settings panel
         var panel = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(500, 400)
+            CustomMinimumSize = new Vector2(500, 520)
         };
 
         var panelStyle = new StyleBoxFlat
@@ -150,6 +151,43 @@ public partial class SettingsMenu : Control
         _uiScaleLabel = new Label { Text = "100%" };
         _uiScaleLabel.CustomMinimumSize = new Vector2(50, 0);
         scaleContainer.AddChild(_uiScaleLabel);
+
+        // LLM Status Section
+        var llmSep = new HSeparator();
+        vbox.AddChild(llmSep);
+
+        var llmTitle = new Label
+        {
+            Text = "AI STATUS",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        llmTitle.AddThemeFontSizeOverride("font_size", 20);
+        llmTitle.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 0.9f));
+        vbox.AddChild(llmTitle);
+
+        var llmGrid = new GridContainer
+        {
+            Columns = 2
+        };
+        llmGrid.AddThemeConstantOverride("h_separation", 20);
+        llmGrid.AddThemeConstantOverride("v_separation", 6);
+        vbox.AddChild(llmGrid);
+
+        // Model name
+        AddLlmStatusRow(llmGrid, "Model:", LlmServiceManager.LoadedModelName ?? "Not loaded");
+
+        // Backend
+        AddLlmStatusRow(llmGrid, "Backend:", LlmDiagnostics.BackendLoaded);
+
+        // GPU status
+        var gpuStatus = LlmDiagnostics.GpuDetected
+            ? (LlmDiagnostics.GpuDeviceName ?? "Yes")
+            : "No (CPU only)";
+        AddLlmStatusRow(llmGrid, "GPU:", gpuStatus);
+
+        // Layers/Threads
+        AddLlmStatusRow(llmGrid, "GPU Layers:", LlmDiagnostics.GpuLayersUsed.ToString());
+        AddLlmStatusRow(llmGrid, "CPU Threads:", LlmDiagnostics.CpuThreads.ToString());
 
         // Spacer
         var spacer = new Control();
@@ -259,5 +297,22 @@ public partial class SettingsMenu : Control
             OnClosePressed();
             GetViewport().SetInputAsHandled();
         }
+    }
+
+    private static void AddLlmStatusRow(GridContainer grid, string label, string value)
+    {
+        var labelNode = new Label { Text = label };
+        labelNode.AddThemeFontSizeOverride("font_size", 14);
+        labelNode.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.7f));
+        grid.AddChild(labelNode);
+
+        var valueNode = new Label { Text = value };
+        valueNode.AddThemeFontSizeOverride("font_size", 14);
+        // Color-code based on GPU detection
+        var valueColor = value.Contains("No") || value.Contains("CPU") || value == "Unknown"
+            ? new Color(1.0f, 0.7f, 0.5f)  // Orange/warning for CPU/unknown
+            : new Color(0.5f, 1.0f, 0.7f); // Green for GPU
+        valueNode.AddThemeColorOverride("font_color", valueColor);
+        grid.AddChild(valueNode);
     }
 }

@@ -10,6 +10,7 @@ namespace InertiCorp.Core.Llm;
 public sealed class LlmEmailService : IDisposable
 {
     private readonly ModelManager _modelManager;
+    private readonly Random _flavorRng = new();
 
     private LLamaWeights? _model;
     private ModelParams? _modelParams;
@@ -17,6 +18,79 @@ public sealed class LlmEmailService : IDisposable
     private LLamaContext? _sharedContext;  // Reusable context for faster inference
 
     private const int MaxTokens = 190;  // 2-3 sentence emails, with buffer for completion
+
+    // Rotating humor styles for variety (Dilbert/Office Space inspired)
+    private static readonly string[] ProjectFlavors =
+    [
+        "Take credit while deflecting blame",
+        "Mention synergy or alignment unnecessarily",
+        "Reference a meeting that could have been an email",
+        "Imply someone else dropped the ball",
+        "Use metrics that sound impressive but mean nothing",
+        "Suggest forming a committee or task force",
+        "Passive-aggressively CC someone's manager",
+        "Celebrate mediocrity as if it were exceptional",
+        "Blame the timeline while praising the team",
+        "Reference 'learnings' or 'takeaways' earnestly",
+        "Declare victory before results are measured",
+        "Suggest we 'leverage' something abstract",
+        "Mention stakeholder alignment with a straight face",
+        "Reference the strategic roadmap vaguely",
+        "Use 'pivot' as if it were planned all along",
+        "Praise the team's resilience through self-inflicted chaos",
+        "Invoke best practices without naming any",
+        "Suggest this positions us well for Q-whatever",
+        "Reference cross-functional collaboration unnecessarily",
+        "Claim the budget was always this tight"
+    ];
+
+    private static readonly string[] CrisisFlavors =
+    [
+        "Blame a vendor or external factor",
+        "Insist this was unforeseeable despite warnings",
+        "Suggest an all-hands meeting to discuss feelings",
+        "Reference the importance of 'optics'",
+        "Imply legal wants to be looped in",
+        "Mention this could affect bonuses",
+        "Suggest someone volunteer to own this",
+        "Reference previous similar disasters casually",
+        "Propose a retrospective before fixing anything",
+        "Wonder aloud who approved this originally",
+        "Ask if we have insurance for this",
+        "Suggest everyone stay calm while panicking",
+        "Reference the crisis communication playbook",
+        "Wonder if competitors are experiencing this too",
+        "Propose forming an emergency task force",
+        "Suggest this is actually an opportunity",
+        "Ask who's handling the press inquiry",
+        "Reference that time something similar happened",
+        "Imply executive leadership should be informed carefully",
+        "Suggest we control the narrative proactively"
+    ];
+
+    private static readonly string[] ResponseFlavors =
+    [
+        "Agree enthusiastically while changing nothing",
+        "Promise to circle back and never do so",
+        "Redirect to a different department entirely",
+        "Suggest the CEO's idea was already in progress",
+        "Misinterpret the request deliberately",
+        "Provide technically correct but useless info",
+        "Reference bandwidth or capacity constraints",
+        "Suggest a pilot program to delay commitment",
+        "Ask clarifying questions to buy time",
+        "Invoke process or policy apologetically",
+        "Offer to schedule a meeting to discuss further",
+        "Claim alignment with the CEO's vision vaguely",
+        "Mention competing priorities diplomatically",
+        "Suggest the request is already in the backlog",
+        "Reference resource constraints sympathetically",
+        "Propose a phased approach to delay everything",
+        "Thank the CEO for their leadership enthusiastically",
+        "Mention needing to loop in another stakeholder",
+        "Suggest we revisit this next quarter",
+        "Reference ongoing transformation initiatives"
+    ];
 
     /// <summary>
     /// Event raised when the LLM is ready for generation.
@@ -89,16 +163,21 @@ public sealed class LlmEmailService : IDisposable
             // Optimize parameters based on model tier
             var (contextSize, gpuLayers) = GetOptimizedParams(modelInfo);
 
+            const int cpuThreads = 4;  // Lower thread count leaves CPU headroom for audio subsystem
+
             _modelParams = new ModelParams(modelPath)
             {
                 ContextSize = contextSize,
                 GpuLayerCount = gpuLayers,
-                BatchSize = 128,  // Smaller batches reduce CPU spikes (was 512)
-                Threads = 2,      // Leave cores for audio subsystem (was ProcessorCount / 2)
+                BatchSize = 128,  // Smaller batches reduce CPU spikes
+                Threads = cpuThreads,
             };
 
             _model = await LLamaWeights.LoadFromFileAsync(_modelParams, ct);
             _activeModelInfo = modelInfo;
+
+            // Record diagnostics for status display
+            LlmDiagnostics.RecordModelParams(gpuLayers, cpuThreads);
 
             // Create a shared context for faster inference (avoids recreating each time)
             _sharedContext = _model.CreateContext(_modelParams);
@@ -188,6 +267,7 @@ public sealed class LlmEmailService : IDisposable
         string outcomeTier,
         string? profitImpact = null,
         string? meterEffects = null,
+        string? senderName = null,
         CancellationToken ct = default)
     {
         if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
@@ -195,7 +275,7 @@ public sealed class LlmEmailService : IDisposable
 
         try
         {
-            var prompt = BuildCardPrompt(cardTitle, cardDescription, outcomeTier, profitImpact, meterEffects);
+            var prompt = BuildCardPrompt(cardTitle, cardDescription, outcomeTier, profitImpact, meterEffects, senderName);
             var executor = new StatelessExecutor(_model, _modelParams);
             var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
 
@@ -217,7 +297,7 @@ public sealed class LlmEmailService : IDisposable
         }
     }
 
-    private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier, string? profitImpact = null, string? meterEffects = null)
+    private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier, string? profitImpact = null, string? meterEffects = null, string? senderName = null)
     {
         // Build results context from project execution
         var resultsContext = new StringBuilder();
@@ -230,18 +310,28 @@ public sealed class LlmEmailService : IDisposable
             resultsContext.Append($"Organization effects: {meterEffects}. ");
         }
 
+        // Pick a random humor flavor for variety
+        var flavor = ProjectFlavors[_flavorRng.Next(ProjectFlavors.Length)];
+
+        // Include sender context if available
+        var senderContext = !string.IsNullOrEmpty(senderName)
+            ? $"You are {senderName} writing to the CEO."
+            : "You are a middle manager writing to the CEO.";
+
         // Concise prompt for faster generation - 1 paragraph
         var userPrompt = $"""
             Write a SHORT satirical corporate email (2-3 sentences, one paragraph).
 
+            {senderContext}
             Project: {cardTitle} - {cardDescription}
             Outcome: {outcomeTier}
             {(resultsContext.Length > 0 ? $"Results: {resultsContext}" : "")}
 
-            Be passive-aggressive, use buzzwords. Body only, no greeting/signature.
+            Humor style: {flavor}
+            Body only, no greeting/signature. Vary your vocabulary.
             """;
 
-        var systemPrompt = "You write brief, sarcastic corporate emails. 2-3 sentences max. Passive-aggressive humor. Body only.";
+        var systemPrompt = "You write Dilbert-style corporate satire for InertiCorp. Dry wit, passive-aggressive, absurd but believable. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
@@ -257,6 +347,7 @@ public sealed class LlmEmailService : IDisposable
         string? choiceLabel = null,
         string? outcomeTier = null,
         string? effects = null,
+        string? senderName = null,
         CancellationToken ct = default)
     {
         if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
@@ -264,7 +355,7 @@ public sealed class LlmEmailService : IDisposable
 
         try
         {
-            var prompt = BuildCrisisPrompt(crisisTitle, crisisDescription, isResolution, choiceLabel, outcomeTier, effects);
+            var prompt = BuildCrisisPrompt(crisisTitle, crisisDescription, isResolution, choiceLabel, outcomeTier, effects, senderName);
             var executor = new StatelessExecutor(_model, _modelParams);
             var inferenceParams = GetOptimizedInferenceParams(MaxTokens);
 
@@ -294,6 +385,7 @@ public sealed class LlmEmailService : IDisposable
         string subject,
         string ceoMessage,
         string recipient,
+        string? senderName = null,
         CancellationToken ct = default)
     {
         if (!IsReady || _model == null || _activeModelInfo == null || _modelParams == null)
@@ -301,7 +393,7 @@ public sealed class LlmEmailService : IDisposable
 
         try
         {
-            var prompt = BuildFreeformPrompt(subject, ceoMessage, recipient);
+            var prompt = BuildFreeformPrompt(subject, ceoMessage, recipient, senderName);
             var executor = new StatelessExecutor(_model, _modelParams);
             // Use slightly higher token count for freeform, but still optimized
             var inferenceParams = GetOptimizedInferenceParams(MaxTokens + 20);
@@ -324,41 +416,58 @@ public sealed class LlmEmailService : IDisposable
         }
     }
 
-    private string BuildFreeformPrompt(string subject, string ceoMessage, string recipient)
+    private string BuildFreeformPrompt(string subject, string ceoMessage, string recipient, string? senderName = null)
     {
-        // Concise prompt for faster generation
+        // Pick a random humor flavor for variety
+        var flavor = ResponseFlavors[_flavorRng.Next(ResponseFlavors.Length)];
+
+        // Include sender context if available
+        var senderContext = !string.IsNullOrEmpty(senderName)
+            ? $"You are {senderName} replying to the CEO."
+            : "You are a middle manager replying to the CEO.";
+
         var userPrompt = $"""
+            {senderContext}
             CEO emailed {recipient} about "{subject}": "{ceoMessage}"
 
-            Write a SHORT reply (2-3 sentences). Respond directly but with corporate spin. Body only.
+            Write a SHORT reply (2-3 sentences). Humor style: {flavor}
+            Body only. Vary your vocabulary.
             """;
 
-        var systemPrompt = "You're a passive-aggressive manager. 2-3 sentences max. Body only.";
+        var systemPrompt = "You're a middle manager at InertiCorp replying to the CEO. Office Space humor - agreeable on surface, subtly unhelpful. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
 
-    private string BuildCrisisPrompt(string crisisTitle, string crisisDescription, bool isResolution, string? choiceLabel, string? outcomeTier, string? effects = null)
+    private string BuildCrisisPrompt(string crisisTitle, string crisisDescription, bool isResolution, string? choiceLabel, string? outcomeTier, string? effects = null, string? senderName = null)
     {
-        // Concise prompts for faster generation
+        // Pick a random humor flavor for variety
+        var flavor = CrisisFlavors[_flavorRng.Next(CrisisFlavors.Length)];
         string userPrompt;
+
+        // Include sender context if available
+        var senderContext = !string.IsNullOrEmpty(senderName)
+            ? $"You are {senderName} writing to the CEO."
+            : "You are a panicked manager writing to the CEO.";
 
         if (isResolution)
         {
             var effectsLine = !string.IsNullOrEmpty(effects) ? $" Result: {effects}" : "";
             var outcomeDesc = outcomeTier switch
             {
-                "Good" => "success",
-                "Bad" => "problems",
-                _ => "okay"
+                "Good" => "success (spin it positively)",
+                "Bad" => "problems (minimize and deflect)",
+                _ => "mixed results (claim victory anyway)"
             };
 
             userPrompt = $"""
                 Write a SHORT satirical email (2-3 sentences).
 
-                Crisis "{crisisTitle} - {crisisDescription}" resolved via "{choiceLabel ?? "action"}". Outcome: {outcomeDesc}.{effectsLine}
+                {senderContext}
+                Crisis "{crisisTitle}" resolved via "{choiceLabel ?? "action"}". Outcome: {outcomeDesc}.{effectsLine}
 
-                Sound relieved but corporate. Body only.
+                Humor style: {flavor}
+                Body only. Vary your vocabulary.
                 """;
         }
         else
@@ -366,13 +475,15 @@ public sealed class LlmEmailService : IDisposable
             userPrompt = $"""
                 Write a SHORT URGENT satirical email (2-3 sentences).
 
-                CRISIS: {crisisTitle} - {crisisDescription}
+                {senderContext}
+                CRISIS at InertiCorp: {crisisTitle} - {crisisDescription}
 
-                Sound panicked, use buzzwords. Body only.
+                Humor style: {flavor}
+                Body only. Vary your vocabulary.
                 """;
         }
 
-        var systemPrompt = "You write brief panicked corporate emails. 2-3 sentences. Body only.";
+        var systemPrompt = "You write Dilbert-style crisis emails for InertiCorp. Panicked but corporate - concerned about optics, blame-shifting, CYA language. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }

@@ -327,11 +327,6 @@ public sealed class EmailGenerator
 
             The previous CEO lasted four quarters. We trust you will exceed that benchmark.
 
-            Regards,
-            Patricia Sterling
-            Chairperson, Board of Directors
-            InertiCorp Holdings, LLC
-
             P.S. — Your predecessor's personal effects have been removed from the corner office. The plant did not survive.
             """;
 
@@ -487,11 +482,6 @@ public sealed class EmailGenerator
             {favorabilityText}
 
             {closingText}
-
-            Regards,
-            Patricia Sterling
-            Chairperson, Board of Directors
-            InertiCorp Holdings, LLC
             """;
 
         var tone = survived

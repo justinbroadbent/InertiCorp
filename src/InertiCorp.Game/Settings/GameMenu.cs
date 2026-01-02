@@ -242,6 +242,34 @@ public partial class GameMenu : Control
 
         vbox.AddChild(new HSeparator());
 
+        // AI Status section header
+        var aiStatusHeader = new Label
+        {
+            Text = "AI STATUS",
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        aiStatusHeader.AddThemeFontSizeOverride("font_size", 18);
+        aiStatusHeader.AddThemeColorOverride("font_color", new Color(0.7f, 0.8f, 0.9f));
+        vbox.AddChild(aiStatusHeader);
+
+        // AI status grid
+        var aiGrid = new GridContainer { Columns = 2 };
+        aiGrid.AddThemeConstantOverride("h_separation", 20);
+        aiGrid.AddThemeConstantOverride("v_separation", 8);
+        vbox.AddChild(aiGrid);
+
+        AddAiStatusRow(aiGrid, "Model:", LlmServiceManager.LoadedModelName ?? "Not loaded");
+        AddAiStatusRow(aiGrid, "Backend:", LlmDiagnostics.BackendLoaded);
+
+        var gpuStatus = LlmDiagnostics.GpuDetected
+            ? (LlmDiagnostics.GpuDeviceName ?? "Detected")
+            : "No (CPU only)";
+        AddAiStatusRow(aiGrid, "GPU:", gpuStatus);
+        AddAiStatusRow(aiGrid, "GPU Layers:", LlmDiagnostics.GpuLayersUsed.ToString());
+        AddAiStatusRow(aiGrid, "CPU Threads:", LlmDiagnostics.CpuThreads.ToString());
+
+        vbox.AddChild(new HSeparator());
+
         // Gameplay section header
         var gameplayHeader = new Label
         {
@@ -385,6 +413,23 @@ Your bonus depends on performance:
         labelNode.AddThemeFontSizeOverride("font_size", 16);
         grid.AddChild(labelNode);
         grid.AddChild(control);
+    }
+
+    private static void AddAiStatusRow(GridContainer grid, string label, string value)
+    {
+        var labelNode = new Label { Text = label };
+        labelNode.AddThemeFontSizeOverride("font_size", 14);
+        labelNode.AddThemeColorOverride("font_color", new Color(0.7f, 0.7f, 0.7f));
+        grid.AddChild(labelNode);
+
+        var valueNode = new Label { Text = value };
+        valueNode.AddThemeFontSizeOverride("font_size", 14);
+        // Color-code: orange for CPU/unknown, green for GPU
+        var isWarning = value.Contains("No") || value.Contains("CPU") || value == "Unknown" || value == "0" || value == "Not loaded";
+        valueNode.AddThemeColorOverride("font_color", isWarning
+            ? new Color(1.0f, 0.7f, 0.5f)   // Orange/warning
+            : new Color(0.5f, 1.0f, 0.7f)); // Green
+        grid.AddChild(valueNode);
     }
 
     private OptionButton CreateWindowModeOption()

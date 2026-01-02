@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using InertiCorp.Core;
 using InertiCorp.Core.Cards;
+using InertiCorp.Core.Content;
 using InertiCorp.Core.Email;
 using InertiCorp.Core.Llm;
 using InertiCorp.Core.Situation;
@@ -384,8 +385,19 @@ public partial class BackgroundEmailProcessor : Node
                     var profit = activeProject.ProfitImpact;
                     var effects = activeProject.MeterEffects;
 
+                    // Determine sender based on the thread that was created
+                    string? senderName = null;
+                    if (!string.IsNullOrEmpty(activeProject.PendingThreadId))
+                    {
+                        var thread = _gameManager?.CurrentState?.Inbox.GetThread(activeProject.PendingThreadId);
+                        if (thread?.LatestMessage != null)
+                        {
+                            senderName = thread.LatestMessage.FromDisplay;
+                        }
+                    }
+
                     aiBody = await Task.Run(async () =>
-                        await emailService.GenerateCardEmailAsync(title, desc, outcome, profit, effects, cts.Token).ConfigureAwait(false),
+                        await emailService.GenerateCardEmailAsync(title, desc, outcome, profit, effects, senderName, cts.Token).ConfigureAwait(false),
                         cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -459,8 +471,12 @@ public partial class BackgroundEmailProcessor : Node
                     var title = card.Title;
                     var desc = card.Description;
 
+                    // Crisis emails come from EngManager
+                    var senderEmployee = CompanyDirectory.GetEmployeeForEvent(SenderArchetype.EngManager, card.EventId);
+                    var senderName = $"{senderEmployee.Name}, {senderEmployee.Title}";
+
                     aiBody = await Task.Run(async () =>
-                        await emailService.GenerateCrisisEmailAsync(title, desc, false, null, null, null, cts.Token).ConfigureAwait(false),
+                        await emailService.GenerateCrisisEmailAsync(title, desc, false, null, null, null, senderName, cts.Token).ConfigureAwait(false),
                         cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -565,6 +581,7 @@ public partial class BackgroundEmailProcessor : Node
                     case AiPromptType.ProjectCard:
                         var profit = request.AdditionalContext?.GetValueOrDefault("profit");
                         var effects = request.AdditionalContext?.GetValueOrDefault("effects");
+                        var projectSender = request.AdditionalContext?.GetValueOrDefault("senderName");
                         GD.Print($"[BackgroundProcessor] Generating project email for {request.Title}");
                         return await (emailService?.GenerateCardEmailAsync(
                             request.Title,
@@ -572,9 +589,16 @@ public partial class BackgroundEmailProcessor : Node
                             request.OutcomeText,
                             profit,
                             effects,
+                            projectSender,
                             cts.Token) ?? Task.FromResult<string?>(null)).ConfigureAwait(false);
 
                     case AiPromptType.CrisisInitial:
+                        var crisisInitialSender = request.AdditionalContext?.GetValueOrDefault("senderName");
+                        if (string.IsNullOrEmpty(crisisInitialSender))
+                        {
+                            var emp = CompanyDirectory.GetEmployeeForEvent(SenderArchetype.EngManager, request.RequestId);
+                            crisisInitialSender = $"{emp.Name}, {emp.Title}";
+                        }
                         GD.Print($"[BackgroundProcessor] Generating crisis email for {request.Title}");
                         return await (emailService?.GenerateCrisisEmailAsync(
                             request.Title,
@@ -583,12 +607,19 @@ public partial class BackgroundEmailProcessor : Node
                             choiceLabel: null,
                             outcomeTier: null,
                             effects: null,
+                            crisisInitialSender,
                             cts.Token) ?? Task.FromResult<string?>(null)).ConfigureAwait(false);
 
                     case AiPromptType.CrisisResponse:
                         var choiceLabel = request.AdditionalContext?.GetValueOrDefault("choiceLabel");
                         var outcomeTier = request.AdditionalContext?.GetValueOrDefault("outcomeTier");
                         var crisisEffects = request.AdditionalContext?.GetValueOrDefault("effects");
+                        var crisisRespSender = request.AdditionalContext?.GetValueOrDefault("senderName");
+                        if (string.IsNullOrEmpty(crisisRespSender))
+                        {
+                            var emp = CompanyDirectory.GetEmployeeForEvent(SenderArchetype.EngManager, request.RequestId);
+                            crisisRespSender = $"{emp.Name}, {emp.Title}";
+                        }
                         GD.Print($"[BackgroundProcessor] Generating crisis response for {request.Title} (effects: {crisisEffects ?? "none"})");
                         return await (emailService?.GenerateCrisisEmailAsync(
                             request.Title,
@@ -597,15 +628,23 @@ public partial class BackgroundEmailProcessor : Node
                             choiceLabel,
                             outcomeTier,
                             crisisEffects,
+                            crisisRespSender,
                             cts.Token) ?? Task.FromResult<string?>(null)).ConfigureAwait(false);
 
                     case AiPromptType.FreeformEmail:
                         var recipient = request.AdditionalContext?.GetValueOrDefault("recipient") ?? "All Staff";
+                        var freeformSender = request.AdditionalContext?.GetValueOrDefault("senderName");
+                        if (string.IsNullOrEmpty(freeformSender))
+                        {
+                            var emp = CompanyDirectory.GetEmployeeForEvent(SenderArchetype.PM, request.RequestId);
+                            freeformSender = $"{emp.Name}, {emp.Title}";
+                        }
                         GD.Print($"[BackgroundProcessor] Generating freeform response for {request.Title}");
                         return await (emailService?.GenerateFreeformResponseAsync(
                             request.Title,
                             request.Description,
                             recipient,
+                            freeformSender,
                             cts.Token) ?? Task.FromResult<string?>(null)).ConfigureAwait(false);
 
                     default:
