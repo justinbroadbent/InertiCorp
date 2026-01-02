@@ -76,12 +76,6 @@ public static class QuarterEngine
         {
             (newEventDecks, crisisCard) = state.EventDecks.DrawCrisis(rng);
             log = log.WithEntry(LogEntry.Info("A situation is brewing..."));
-
-            // Pre-generate LLM content for the crisis (if LLM is ready)
-            if (crisisCard != null)
-            {
-                LlmServiceManager.PreGenerateCrisis(crisisCard);
-            }
         }
 
         newState = newState
@@ -187,9 +181,6 @@ public static class QuarterEngine
                 newState = newState
                     .WithCurrentCrisis(crisisCard)
                     .WithSituationResolved(dueSituation.SituationId);
-
-                // Pre-generate LLM content for the erupting situation
-                LlmServiceManager.PreGenerateCrisis(crisisCard);
 
                 log = log.WithEntry(LogEntry.Info($"⚠ Situation erupts: {situationDef.Title}"));
             }
@@ -784,7 +775,8 @@ public static class QuarterEngine
             var newInbox = newState.Inbox.WithThreadAdded(cardThread);
 
             // 15% chance to receive random fluff email (corporate noise)
-            if (rng.NextInt(1, 101) <= 15)
+            // Skip for queued cards - they're processed in background
+            if (!input.IsQueuedCard && rng.NextInt(1, 101) <= 15)
             {
                 var fluffGen = new FluffEmailGenerator(rng.NextInt(0, int.MaxValue));
                 var fluffThread = fluffGen.GenerateFluffEmail(state.Quarter.QuarterNumber);

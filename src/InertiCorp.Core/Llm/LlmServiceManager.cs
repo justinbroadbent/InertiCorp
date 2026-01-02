@@ -1,5 +1,3 @@
-using InertiCorp.Core.Situation;
-
 namespace InertiCorp.Core.Llm;
 
 /// <summary>
@@ -119,33 +117,4 @@ public static class LlmServiceManager
     /// Whether the LLM is currently generating content.
     /// </summary>
     public static bool IsGenerating => _emailService?.IsGenerating ?? false;
-
-    /// <summary>
-    /// Pre-generates email content for a crisis event card.
-    /// Call this when a crisis is drawn to have content ready before it's displayed.
-    /// </summary>
-    public static void PreGenerateCrisis(EventCard crisisCard)
-    {
-        if (!IsReady || _emailService == null) return;
-
-        // Create a situation from the crisis card
-        var situation = new SituationDefinition(
-            SituationId: crisisCard.EventId,
-            Title: crisisCard.Title,
-            Description: crisisCard.Description,
-            EmailSubject: $"URGENT: {crisisCard.Title}",
-            EmailBody: crisisCard.Description,
-            Severity: SituationSeverity.Moderate,
-            Responses: Array.Empty<SituationResponse>());
-
-        // Pre-generate for likely outcomes
-        var likelySituations = new[]
-        {
-            (situation, OutcomeTier.Expected),
-            (situation, OutcomeTier.Good),
-            (situation, OutcomeTier.Bad)
-        };
-
-        _emailService.PreGenerate(likelySituations);
-    }
 }

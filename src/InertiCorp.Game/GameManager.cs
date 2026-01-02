@@ -372,16 +372,28 @@ public partial class GameManager : Node
     /// Plays a card that was queued in the project queue.
     /// Effects are deferred until the project completes (after AI generation).
     /// </summary>
-    public void PlayQueuedCard(string cardId)
+    /// <param name="cardId">The card ID to play</param>
+    /// <param name="card">Optional card object if the card was already removed from hand</param>
+    public void PlayQueuedCard(string cardId, PlayableCard? card = null)
     {
         if (CurrentState is null || _rng is null) return;
         if (CurrentState.Quarter.Phase != GamePhase.PlayCards) return;
 
-        // Check that the card is actually in the hand
+        // If card isn't in hand but we have the card object, add it back temporarily
         if (!CurrentState.Hand.Contains(cardId))
         {
-            GD.PrintErr($"[GameManager] Queued card {cardId} not found in hand");
-            return;
+            if (card != null)
+            {
+                // Card was removed from hand by AddToProjectQueue, add it back temporarily
+                var tempHand = CurrentState.Hand.WithCardAdded(card);
+                CurrentState = CurrentState.WithHand(tempHand);
+                GD.Print($"[GameManager] Temporarily added card {cardId} back to hand for playing");
+            }
+            else
+            {
+                GD.PrintErr($"[GameManager] Queued card {cardId} not found in hand");
+                return;
+            }
         }
 
         // Store the pre-play state (before effects)
@@ -389,7 +401,8 @@ public partial class GameManager : Node
         var preCEO = CurrentState.CEO;
 
         // Play the card - this applies effects and creates email
-        var input = QuarterInput.ForPlayCard(cardId, endPhase: false);
+        // Use ForQueuedCard to suppress fluff email generation
+        var input = QuarterInput.ForQueuedCard(cardId);
         var (newState, log) = QuarterEngine.Advance(CurrentState, input, _rng);
 
         // Calculate the deltas (what changed)
@@ -413,6 +426,16 @@ public partial class GameManager : Node
 
         CurrentState = deferredState;
         LastLog = log;
+
+        // Hide the email thread until AI content is ready
+        var thread = CurrentState.Inbox.GetThreadForCard(cardId);
+        if (thread != null)
+        {
+            var hiddenThread = thread with { IsVisible = false };
+            var hiddenInbox = CurrentState.Inbox.WithThreadReplaced(thread.ThreadId, hiddenThread);
+            CurrentState = CurrentState.WithInbox(hiddenInbox);
+            GD.Print($"[GameManager] Thread {thread.ThreadId} hidden until AI content ready");
+        }
 
         LogPhase(log);
         GD.Print($"[GameManager] Queued card played (effects deferred): {cardId}");
@@ -494,7 +517,7 @@ public partial class GameManager : Node
     /// <summary>
     /// Finalizes a project that was processed in the background.
     /// Called by BackgroundEmailProcessor when AI content is ready.
-    /// This plays the card through the normal engine flow, then updates email with AI content.
+    /// The card was already played in QueueProject - this just updates the email and applies effects.
     /// </summary>
     public void FinalizeQueuedProject(string cardId, string? aiContent)
     {
@@ -502,34 +525,54 @@ public partial class GameManager : Node
 
         GD.Print($"[GameManager] Finalizing queued project: {cardId}");
 
-        // Get the original card from BackgroundEmailProcessor
-        var card = BackgroundEmailProcessor.Instance?.GetQueuedCard(cardId);
-        if (card == null)
+        // The card was already played in BackgroundEmailProcessor.QueueProject via PlayQueuedCard.
+        // Effects were calculated and stored in _deferredEffects.
+        // The email thread exists but is hidden. We need to:
+        // 1. Update the email body with AI content (or keep template)
+        // 2. Make the thread visible
+        // 3. Apply the deferred effects
+
+        var thread = CurrentState.Inbox.GetThreadForCard(cardId);
+        if (thread == null)
         {
-            GD.PrintErr($"[GameManager] Queued card not found: {cardId}");
+            GD.PrintErr($"[GameManager] No thread found for card {cardId}");
+            ApplyDeferredEffects(cardId);
             return;
         }
 
-        // Add the card back to hand temporarily so PlayQueuedCard can find it
-        var tempHand = CurrentState.Hand.WithCardAdded(card);
-        CurrentState = CurrentState.WithHand(tempHand);
+        // Update body with AI content if available and substantial (min 50 chars)
+        const int MinContentLength = 50;
+        var updatedThread = thread;
 
-        // Play through normal flow - this creates the email and defers effects
-        PlayQueuedCard(cardId);
-
-        // Update the email with AI content if available
-        if (!string.IsNullOrEmpty(aiContent))
+        if (!string.IsNullOrEmpty(aiContent) && aiContent.Length >= MinContentLength)
         {
-            var thread = CurrentState.Inbox.GetThreadForCard(cardId);
-            if (thread != null)
-            {
-                UpdateThreadWithAiContent(thread.ThreadId, aiContent);
-            }
+            // Update the last message body with AI content
+            var updatedMessages = thread.Messages.Select((m, i) =>
+                i == thread.Messages.Count - 1
+                    ? m with { Body = aiContent }
+                    : m).ToList();
+            updatedThread = thread with { Messages = updatedMessages };
+            GD.Print($"[GameManager] Updated thread with AI content ({aiContent.Length} chars)");
         }
+        else if (!string.IsNullOrEmpty(aiContent))
+        {
+            GD.Print($"[GameManager] AI content too short ({aiContent.Length} chars), keeping template");
+        }
+        else
+        {
+            GD.Print($"[GameManager] No AI content, keeping template");
+        }
+
+        // Make the thread visible now that content is ready
+        updatedThread = updatedThread with { IsVisible = true };
+        var updatedInbox = CurrentState.Inbox.WithThreadReplaced(thread.ThreadId, updatedThread);
+        CurrentState = CurrentState.WithInbox(updatedInbox);
+        GD.Print($"[GameManager] Thread {thread.ThreadId} now visible");
 
         // Apply deferred effects immediately (since we're in background completion)
         ApplyDeferredEffects(cardId);
 
+        EmitSignal(SignalName.StateChanged);
         GD.Print($"[GameManager] Project finalized with effects: {cardId}");
     }
 
@@ -587,6 +630,9 @@ public partial class GameManager : Node
                 CurrentState.CEO.BoardPressureLevel,
                 CurrentState.CEO.EvilScore);
 
+            // Set OriginatingCardId so NavigateToUnresolvedCrisis can find this thread
+            crisisThread = crisisThread with { OriginatingCardId = crisisCard.EventId };
+
             // If we have AI content, update the thread body
             if (!string.IsNullOrEmpty(aiContent))
             {
@@ -620,6 +666,27 @@ public partial class GameManager : Node
     {
         if (CurrentState is null || _rng is null) return;
         if (CurrentState.Quarter.Phase != GamePhase.PlayCards) return;
+
+        // Block if there are still projects being processed
+        var processor = BackgroundEmailProcessor.Instance;
+        var hasActive = processor?.HasActiveProjects ?? false;
+        var activeCount = processor?.ActiveProjectCount ?? 0;
+        GD.Print($"[EndPlayCardsPhase] Checking: processor={processor != null}, hasActive={hasActive}, count={activeCount}");
+
+        if (hasActive)
+        {
+            GD.Print("[GameManager] Cannot end PlayCards phase - projects still processing");
+            EmitSignal(SignalName.StateChanged); // Refresh UI to show blocked state
+            return;
+        }
+
+        // Block if there's an unresolved crisis
+        if (HasPendingCrisis)
+        {
+            GD.Print("[GameManager] Cannot end PlayCards phase - pending crisis must be resolved");
+            EmitSignal(SignalName.StateChanged); // Refresh UI
+            return;
+        }
 
         var (newState, log) = QuarterEngine.Advance(CurrentState, QuarterInput.EndCardPlay, _rng);
         CurrentState = newState;
@@ -1077,6 +1144,9 @@ public partial class GameManager : Node
             CurrentState.CEO.BoardPressureLevel,
             CurrentState.CEO.EvilScore);
 
+        // Set OriginatingCardId so NavigateToUnresolvedCrisis can find this thread
+        crisisThread = crisisThread with { OriginatingCardId = crisisCard.EventId };
+
         var newInbox = CurrentState.Inbox.WithThreadAdded(crisisThread);
         CurrentState = CurrentState.WithInbox(newInbox);
 
@@ -1215,9 +1285,41 @@ public partial class GameManager : Node
 
     /// <summary>
     /// Whether there's an unresolved crisis that must be handled before ending the phase.
-    /// Returns true if there's an active crisis that needs a response.
+    /// Returns true if there's an active crisis that needs a response AND a crisis thread exists.
+    /// The thread may not exist yet if we're in PlayCards and haven't entered Crisis phase.
     /// </summary>
-    public bool HasPendingCrisis => CurrentState?.CurrentCrisis is not null;
+    public bool HasPendingCrisis
+    {
+        get
+        {
+            if (CurrentState?.CurrentCrisis is null)
+            {
+                return false;
+            }
+
+            var crisisEventId = CurrentState.CurrentCrisis.EventId;
+
+            // Check if the crisis thread actually exists in the inbox
+            var crisisThread = CurrentState.Inbox.Threads.FirstOrDefault(t =>
+                t.ThreadType == EmailThreadType.Crisis &&
+                t.OriginatingCardId == crisisEventId);
+
+            if (crisisThread != null)
+            {
+                GD.Print($"[HasPendingCrisis] Found crisis thread: {crisisThread.ThreadId}, EventId={crisisEventId}, Visible={crisisThread.IsVisible}");
+                return true;
+            }
+
+            // Log why we're returning false
+            var allCrisisThreads = CurrentState.Inbox.Threads.Where(t => t.ThreadType == EmailThreadType.Crisis).ToList();
+            if (allCrisisThreads.Count > 0)
+            {
+                GD.Print($"[HasPendingCrisis] CurrentCrisis.EventId={crisisEventId}, but crisis threads have IDs: {string.Join(", ", allCrisisThreads.Select(t => t.OriginatingCardId ?? "null"))}");
+            }
+
+            return false;
+        }
+    }
 
     /// <summary>
     /// Responds to a pending crisis (from any phase).

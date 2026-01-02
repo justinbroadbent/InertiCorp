@@ -1887,35 +1887,36 @@ public partial class CEODashboard : Control
             return;
         }
 
-        // Ready - check if generating content
-        var isGenerating = LlmServiceManager.IsGenerating;
+        // Ready - check if generating content (use BackgroundEmailProcessor which does actual generation)
+        var isGenerating = BackgroundEmailProcessor.Instance?.HasActiveProjects ?? false;
 
         if (isGenerating)
         {
-            // Generating - blink green
+            // Generating - smooth pulsing cyan glow
             _aiBlinkTimer += delta;
-            if (_aiBlinkTimer >= 0.3)
-            {
-                _aiBlinkTimer = 0;
-                _aiBlinkState = !_aiBlinkState;
-            }
+            var pulse = (float)(Math.Sin(_aiBlinkTimer * 4.0) * 0.5 + 0.5); // Smooth sine wave
 
-            if (_aiBlinkState)
-            {
-                _aiStatusDot.Modulate = new Color(0.3f, 1.0f, 0.5f); // Bright green
-                _aiStatusLabel.Modulate = new Color(0.4f, 0.9f, 0.5f);
-            }
-            else
-            {
-                _aiStatusDot.Modulate = new Color(0.15f, 0.5f, 0.25f); // Dim green
-                _aiStatusLabel.Modulate = new Color(0.3f, 0.5f, 0.35f);
-            }
+            // Pulse between cyan and bright white-cyan
+            var dotColor = new Color(
+                0.3f + pulse * 0.5f,   // R: 0.3 -> 0.8
+                0.9f + pulse * 0.1f,   // G: 0.9 -> 1.0
+                1.0f                    // B: always 1.0 (cyan)
+            );
+            var labelColor = new Color(
+                0.4f + pulse * 0.4f,   // R: 0.4 -> 0.8
+                0.9f + pulse * 0.1f,   // G: 0.9 -> 1.0
+                1.0f                    // B: always 1.0
+            );
+
+            _aiStatusDot.Modulate = dotColor;
+            _aiStatusLabel.Modulate = labelColor;
         }
         else
         {
             // Ready and idle - solid green
             _aiStatusDot.Modulate = new Color(0.3f, 0.9f, 0.4f);
             _aiStatusLabel.Modulate = new Color(0.4f, 0.8f, 0.5f);
+            _aiBlinkTimer = 0; // Reset for next generation
         }
     }
 
@@ -2912,10 +2913,17 @@ public partial class CEODashboard : Control
     /// </summary>
     private void NavigateToUnresolvedCrisis()
     {
-        if (_gameManager?.CurrentState?.CurrentCrisis is null) return;
+        GD.Print("[NavigateToUnresolvedCrisis] Button clicked");
+
+        if (_gameManager?.CurrentState?.CurrentCrisis is null)
+        {
+            GD.Print("[NavigateToUnresolvedCrisis] No CurrentCrisis, aborting");
+            return;
+        }
 
         var inbox = _gameManager.CurrentState.Inbox;
         var crisisEventId = _gameManager.CurrentState.CurrentCrisis.EventId;
+        GD.Print($"[NavigateToUnresolvedCrisis] Looking for crisis EventId={crisisEventId}");
 
         // Find the crisis thread that matches the current crisis
         var crisisThread = inbox.AllThreadsOrdered
@@ -2924,7 +2932,20 @@ public partial class CEODashboard : Control
 
         if (crisisThread is not null)
         {
+            GD.Print($"[NavigateToUnresolvedCrisis] Found thread: {crisisThread.ThreadId}, showing it");
             ShowEmailThread(crisisThread);
+        }
+        else
+        {
+            // Log all crisis threads to understand what's available
+            var allCrisisThreads = inbox.AllThreadsOrdered
+                .Where(t => t.ThreadType == EmailThreadType.Crisis)
+                .ToList();
+            GD.Print($"[NavigateToUnresolvedCrisis] Thread NOT found! All crisis threads ({allCrisisThreads.Count}):");
+            foreach (var t in allCrisisThreads)
+            {
+                GD.Print($"  - ThreadId={t.ThreadId}, OriginatingCardId={t.OriginatingCardId ?? "null"}, Subject={t.Subject}");
+            }
         }
     }
 

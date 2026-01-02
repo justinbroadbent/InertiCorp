@@ -76,7 +76,8 @@ public sealed record EmailThread(
     EmailThreadType ThreadType = EmailThreadType.CardResult,
     long SequenceNumber = 0,
     PendingProjectEffects? PendingEffects = null,
-    bool EffectsAccepted = false)
+    bool EffectsAccepted = false,
+    bool IsVisible = true)
 {
     /// <summary>
     /// Whether this thread has pending effects that need player acceptance.

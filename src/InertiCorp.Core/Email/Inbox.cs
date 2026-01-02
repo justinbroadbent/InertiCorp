@@ -28,48 +28,53 @@ public sealed record Inbox(
     public static Inbox Empty => new(Array.Empty<EmailThread>(), 1, Array.Empty<EmailThread>());
 
     /// <summary>
-    /// Total number of threads.
+    /// Visible threads only (excludes hidden project threads awaiting AI content).
     /// </summary>
-    public int ThreadCount => Threads.Count;
+    private IEnumerable<EmailThread> VisibleThreads => Threads.Where(t => t.IsVisible);
 
     /// <summary>
-    /// Total number of messages across all threads.
+    /// Total number of visible threads.
     /// </summary>
-    public int MessageCount => Threads.Sum(t => t.Messages.Count);
+    public int ThreadCount => VisibleThreads.Count();
 
     /// <summary>
-    /// Number of threads with unread messages.
+    /// Total number of messages across all visible threads.
     /// </summary>
-    public int UnreadThreadCount => Threads.Count(t => !t.IsFullyRead);
+    public int MessageCount => VisibleThreads.Sum(t => t.Messages.Count);
 
     /// <summary>
-    /// All messages across all threads, most recent first.
+    /// Number of visible threads with unread messages.
     /// </summary>
-    public IReadOnlyList<EmailMessage> AllMessages => Threads
+    public int UnreadThreadCount => VisibleThreads.Count(t => !t.IsFullyRead);
+
+    /// <summary>
+    /// All messages across all visible threads, most recent first.
+    /// </summary>
+    public IReadOnlyList<EmailMessage> AllMessages => VisibleThreads
         .SelectMany(t => t.Messages)
         .OrderByDescending(m => m.TurnNumber)
         .ToList();
 
     /// <summary>
-    /// Threads with unread messages, most recent first.
+    /// Visible threads with unread messages, most recent first.
     /// </summary>
-    public IReadOnlyList<EmailThread> UnreadThreads => Threads
+    public IReadOnlyList<EmailThread> UnreadThreads => VisibleThreads
         .Where(t => !t.IsFullyRead)
         .OrderByDescending(t => t.LatestMessage?.TurnNumber ?? t.CreatedOnTurn)
         .ToList();
 
     /// <summary>
-    /// Top threads for display (most recent arrival first by sequence number).
+    /// Top visible threads for display (most recent arrival first by sequence number).
     /// </summary>
-    public IReadOnlyList<EmailThread> TopThreads => Threads
+    public IReadOnlyList<EmailThread> TopThreads => VisibleThreads
         .OrderByDescending(t => t.SequenceNumber)
         .Take(MaxDisplayCount)
         .ToList();
 
     /// <summary>
-    /// All threads ordered by most recent first (no limit).
+    /// All visible threads ordered by most recent first (no limit).
     /// </summary>
-    public IReadOnlyList<EmailThread> AllThreadsOrdered => Threads
+    public IReadOnlyList<EmailThread> AllThreadsOrdered => VisibleThreads
         .OrderByDescending(t => t.SequenceNumber)
         .ToList();
 

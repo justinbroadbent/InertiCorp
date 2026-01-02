@@ -17,7 +17,8 @@ public sealed record QuarterInput(
     bool ReorgHand = false,
     bool RedeemEvil = false,
     string ReplyChoiceId = "",
-    bool IsRetirementChoice = false)
+    bool IsRetirementChoice = false,
+    bool IsQueuedCard = false)
 {
     /// <summary>
     /// Empty input for phases that don't need player input.
@@ -74,6 +75,12 @@ public sealed record QuarterInput(
     /// </summary>
     public static QuarterInput ForPlayCard(string cardId, bool endPhase = false) =>
         new(PlayedCardId: cardId, EndPlayPhase: endPhase);
+
+    /// <summary>
+    /// Creates input for playing a queued card (suppresses fluff email generation).
+    /// </summary>
+    public static QuarterInput ForQueuedCard(string cardId) =>
+        new(PlayedCardId: cardId, EndPlayPhase: false, IsQueuedCard: true);
 
     /// <summary>
     /// Creates input to skip playing cards and end the phase.
