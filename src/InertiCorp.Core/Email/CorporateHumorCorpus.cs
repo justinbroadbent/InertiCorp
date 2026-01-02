@@ -414,11 +414,6 @@ public sealed class CorporateHumorCorpus : IEmailContentProvider
 
             The board will be watching. They're always watching.
 
-            Regards,
-            Patricia Sterling
-            Chairperson, Board of Directors
-            InertiCorp Holdings, LLC
-
             P.S. — The previous CEO's nameplate has been recycled. Just FYI.
             """;
     }

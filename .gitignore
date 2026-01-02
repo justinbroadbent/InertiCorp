@@ -56,3 +56,6 @@ Thumbs.db
 # LLM models (large binary files - download separately)
 *.gguf
 tools/LlmTest/models/
+
+# CUDA runtime DLLs (large binaries - distributed with release, not source)
+**/native/cuda12/

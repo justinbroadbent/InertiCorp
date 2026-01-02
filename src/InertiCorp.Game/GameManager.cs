@@ -91,12 +91,69 @@ public partial class GameManager : Node
     [Signal]
     public delegate void GameEndedEventHandler(bool isWon);
 
+    private LoadingScreen? _loadingScreen;
+    private bool _gameStarted;
+
     public override void _Ready()
     {
         InitializeMusicManager();
         InitializeBackgroundProcessor();
-        InitializeLlmService();
+
+        // Skip loading screen for now - start game directly
+        // TODO: Fix LoadingScreen CanvasLayer _Ready not being called
+        _gameStarted = true;
         StartNewGame();
+
+        // Load LLM in background (won't block game start)
+        InitializeLlmService();
+    }
+
+    private void ShowLoadingScreen()
+    {
+        GD.Print("[GameManager] ShowLoadingScreen called");
+
+        // Hide dashboard initially
+        var dashboard = GetNode<Control>("../CEODashboard");
+        if (dashboard != null)
+        {
+            dashboard.Visible = false;
+            GD.Print("[GameManager] Dashboard hidden");
+        }
+        else
+        {
+            GD.PrintErr("[GameManager] Could not find CEODashboard!");
+        }
+
+        // Create and show loading screen
+        _loadingScreen = new LoadingScreen();
+        _loadingScreen.LoadingComplete += OnLoadingScreenComplete;
+        GetTree().Root.AddChild(_loadingScreen);
+        GD.Print("[GameManager] LoadingScreen added to tree");
+    }
+
+    private void OnLoadingScreenComplete()
+    {
+        GD.Print("[GameManager] OnLoadingScreenComplete called");
+
+        // Show dashboard
+        var dashboard = GetNode<Control>("../CEODashboard");
+        if (dashboard != null)
+        {
+            dashboard.Visible = true;
+            GD.Print("[GameManager] Dashboard shown");
+        }
+        else
+        {
+            GD.PrintErr("[GameManager] Could not find CEODashboard to show!");
+        }
+
+        // Start game if not already started
+        if (!_gameStarted)
+        {
+            _gameStarted = true;
+            GD.Print("[GameManager] Starting new game");
+            StartNewGame();
+        }
     }
 
     private void InitializeBackgroundProcessor()
@@ -115,30 +172,48 @@ public partial class GameManager : Node
 
     private async void InitializeLlmService()
     {
+        GD.Print("[GameManager] InitializeLlmService starting");
+
         // Initialize the LLM service manager
         LlmServiceManager.Initialize();
         LlmServiceManager.Ready += OnLlmReady;
         LlmServiceManager.LoadFailed += OnLlmLoadFailed;
+        GD.Print("[GameManager] LlmServiceManager initialized");
+
+        // Check if a model is configured
+        var modelManager = LlmServiceManager.GetModelManager();
+        if (modelManager?.ActiveModelId == null)
+        {
+            GD.Print("[GameManager] No AI model configured - using email templates");
+            _loadingScreen?.OnLoadingFailed("No AI model installed");
+            return;
+        }
+
+        GD.Print($"[GameManager] Loading model: {modelManager.ActiveModelId}");
 
         // Try to load the active model in the background
         try
         {
             await LlmServiceManager.LoadActiveModelAsync();
+            GD.Print("[GameManager] LoadActiveModelAsync completed");
         }
         catch (System.Exception ex)
         {
-            GD.PrintErr($"Failed to load LLM model: {ex.Message}");
+            GD.PrintErr($"[GameManager] Failed to load LLM model: {ex.Message}");
+            _loadingScreen?.OnLoadingFailed(ex.Message);
         }
     }
 
     private void OnLlmReady()
     {
         GD.Print($"[GameManager] LLM ready: {LlmServiceManager.LoadedModelName}");
+        _loadingScreen?.OnLoadingComplete();
     }
 
     private void OnLlmLoadFailed(System.Exception ex)
     {
         GD.PrintErr($"[GameManager] LLM load failed: {ex.Message}");
+        _loadingScreen?.OnLoadingFailed(ex.Message);
     }
 
     public override void _ExitTree()
@@ -1299,15 +1374,22 @@ public partial class GameManager : Node
 
             var crisisEventId = CurrentState.CurrentCrisis.EventId;
 
-            // Check if the crisis thread actually exists in the inbox
+            // Check if the crisis thread actually exists in the inbox AND is visible
+            // Hidden threads (waiting for AI content) shouldn't block the UI
             var crisisThread = CurrentState.Inbox.Threads.FirstOrDefault(t =>
                 t.ThreadType == EmailThreadType.Crisis &&
                 t.OriginatingCardId == crisisEventId);
 
-            if (crisisThread != null)
+            if (crisisThread != null && crisisThread.IsVisible)
             {
-                GD.Print($"[HasPendingCrisis] Found crisis thread: {crisisThread.ThreadId}, EventId={crisisEventId}, Visible={crisisThread.IsVisible}");
+                GD.Print($"[HasPendingCrisis] Found visible crisis thread: {crisisThread.ThreadId}, EventId={crisisEventId}");
                 return true;
+            }
+
+            if (crisisThread != null && !crisisThread.IsVisible)
+            {
+                GD.Print($"[HasPendingCrisis] Crisis thread exists but hidden (AI pending): {crisisThread.ThreadId}");
+                return false;
             }
 
             // Log why we're returning false

@@ -43,6 +43,9 @@ public static class LlmServiceManager
     {
         if (_initialized) return;
 
+        // Initialize diagnostics FIRST - must be before any LLamaSharp calls
+        LlmDiagnostics.Initialize();
+
         _modelManager = new ModelManager(modelsDirectory);
         _emailService = new LlmEmailService(_modelManager);
 
