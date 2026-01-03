@@ -131,6 +131,51 @@ For CUDA acceleration, place the following in `src/InertiCorp.Core/native/cuda12
 
 The system falls back to CPU inference if CUDA is unavailable. This is fine. Everything is fine.
 
+### Installation Options
+
+**Option A: Pre-Built Installer** *(Recommended for most executives)*
+
+Download the latest release from [GitHub Releases](https://github.com/justinbroadbent/InertiCorp/releases). The installer is unsigned because code signing certificates cost money that could be spent on executive bonuses.
+
+**Option B: Build From Source** *(For the security-conscious or paranoid)*
+
+For executives whose threat model includes "unsigned binaries from the internet" — a reasonable concern that Legal neither confirms nor denies — we provide a PowerShell script that builds everything locally.
+
+**Prerequisites:**
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Godot 4.5.1](https://godotengine.org/download) (the .NET/C# version, not standard)
+- PowerShell 5.1+ (included with Windows 10/11)
+- Coffee (optional but recommended)
+
+**Build Instructions:**
+
+```powershell
+# Clone the repository
+git clone https://github.com/justinbroadbent/InertiCorp.git
+cd InertiCorp
+
+# Run the build script
+.\scripts\Build-FromSource.ps1
+
+# If Godot is installed elsewhere:
+.\scripts\Build-FromSource.ps1 -GodotPath "D:\Games\Godot\godot.exe"
+
+# For the reckless (skips tests):
+.\scripts\Build-FromSource.ps1 -SkipTests
+```
+
+The script will:
+1. Verify prerequisites (with appropriate passive-aggression)
+2. Restore NuGet packages
+3. Build the solution in Release configuration
+4. Run the test suite (440 tests, all deterministic)
+5. Export the game via Godot
+6. Copy native CUDA libraries if present
+
+Output appears in `.\build\`. You built it yourself. No trust required.
+
+*Note: The build script was written by an engineer who would rather be writing bash. The comments reflect this.*
+
 ---
 
 ## Acknowledgments
