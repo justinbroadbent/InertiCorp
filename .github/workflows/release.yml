@@ -67,22 +67,26 @@ jobs:
       - name: Download CUDA Runtime DLLs
         run: |
           # Download CUDA runtime DLLs from llama.cpp release (they bundle the redistributables)
-          $cudaUrl = "https://github.com/ggerganov/llama.cpp/releases/download/b4654/cudart-llama-bin-win-cu12.4.1-x64.zip"
+          # Using ggml-org/llama.cpp which is the current home of the project
+          $cudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/cudart-llama-bin-win-cuda-12.4-x64.zip"
           $cudaZip = "cuda-runtime.zip"
 
-          Write-Host "Downloading CUDA runtime DLLs..."
+          Write-Host "Downloading CUDA runtime DLLs from: $cudaUrl"
           Invoke-WebRequest -Uri $cudaUrl -OutFile $cudaZip
 
           # Extract to a temp directory
           $cudaDir = "cuda-runtime"
           Expand-Archive -Path $cudaZip -DestinationPath $cudaDir -Force
 
+          Write-Host "Extracted contents:"
+          Get-ChildItem $cudaDir -Recurse
+
           # Create native cuda12 directory in the Core project for build to pick up
           $targetDir = "src/InertiCorp.Core/native/cuda12"
           New-Item -ItemType Directory -Force -Path $targetDir
 
-          # Copy the DLLs
-          Copy-Item "$cudaDir/*.dll" $targetDir -Force
+          # Copy the DLLs (they might be in a subdirectory)
+          Get-ChildItem $cudaDir -Filter "*.dll" -Recurse | Copy-Item -Destination $targetDir -Force
 
           Write-Host "CUDA runtime DLLs installed:"
           Get-ChildItem $targetDir
