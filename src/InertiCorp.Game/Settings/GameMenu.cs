@@ -162,7 +162,7 @@ public partial class GameMenu : Control
         // Version info
         var version = new Label
         {
-            Text = "v0.1.0 - Press Escape to close",
+            Text = $"{GameVersion.FullVersion} - Press Escape to close",
             HorizontalAlignment = HorizontalAlignment.Center
         };
         version.AddThemeFontSizeOverride("font_size", 12);

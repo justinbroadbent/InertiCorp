@@ -207,6 +207,7 @@ public partial class SettingsManager : Node
             case WindowMode.Windowed:
             default:
                 window.Mode = Window.ModeEnum.Windowed;
+                window.Unresizable = true;
                 window.Size = CurrentResolution;
                 // Center the window
                 var screenSize = DisplayServer.ScreenGetSize();

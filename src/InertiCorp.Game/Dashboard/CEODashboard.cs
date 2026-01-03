@@ -801,7 +801,7 @@ public partial class CEODashboard : Control
                 Texture = logoTexture,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspect,
-                CustomMinimumSize = new Vector2(220, 55)
+                CustomMinimumSize = new Vector2(150, 38)
             };
             hbox.AddChild(logo);
         }
