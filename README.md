@@ -1,138 +1,146 @@
 # InertiCorp: A Bureaucracy Simulator
 
-*Nudge a massive corporation toward your goals—and watch it misunderstand you in real time.*
+> *"Synergy Through Excellence"*
 
-A satirical card game where you play as a corporate CEO trying to survive board meetings, manage organizational metrics, and retire with a golden parachute before the board fires you.
+**INTERNAL MEMO — CONFIDENTIAL**
 
-## Gameplay
+To: New CEO (You)
+From: Board of Directors
+Re: Orientation Materials & Expectations Management
 
-### The Goal
-Accumulate enough bonus in your compensation package to trigger voluntary retirement before the board loses faith and terminates your employment. Survive quarters, hit profit targets, and manage five organizational meters while dealing with crises that threaten to derail your carefully laid plans.
+---
 
-### The Inbox
-Your primary interface is the corporate inbox. All game events manifest as emails:
-- **Project results** arrive as status updates from department heads
-- **Crises** appear as urgent messages requiring immediate decisions
-- **Board directives** set quarterly profit targets
-- **Performance reviews** arrive at the end of each quarter
+Congratulations on your appointment as Chief Executive Officer of InertiCorp Holdings, LLC. Your predecessor's departure was... abrupt, but the board is confident you will exceed their four-quarter tenure. The bar is not high.
 
-### Project Cards
-Play projects from your hand to generate profit and affect organizational health. Each card has:
-- **Profit potential** - Base revenue generation with outcome variance
-- **Meter effects** - Impact on organizational metrics (positive and negative)
-- **Evil score** - Moral cost of certain decisions (downsizing, corner-cutting, etc.)
+This document contains everything you need to know about steering our beloved organization. Please initial each section to confirm you've read and misunderstood it.
 
-**77 project cards** across three categories:
-- **Revenue** - Direct money-making initiatives
-- **Corporate** - Infrastructure and organizational investments
-- **Action** - Strategic moves with trade-offs
+## Your Objective
 
-### The Five Meters
-Balance these competing organizational priorities:
+Accumulate sufficient bonus compensation to trigger **voluntary retirement** before the board loses confidence and terminates your employment. This is not as easy as it sounds. Your predecessor thought it was easy. Your predecessor is now consulting.
 
-| Meter | Represents |
-|-------|------------|
-| **Delivery** | Engineering velocity and product output |
-| **Morale** | Employee satisfaction and retention |
-| **Governance** | Compliance, security, and risk management |
-| **Alignment** | Strategic focus and executive coherence |
-| **Runway** | Financial reserves and operational buffer |
+## The Inbox
 
-If any meter hits zero, you're in crisis territory. If it stays there too long, the board will notice.
+All corporate activity flows through email. This is by design. If it's not in writing, it didn't happen. If it *is* in writing, Legal will handle it.
 
-### Board Favorability
-The board starts with a baseline opinion of you. Each quarter they:
-- Issue a **profit directive** (target you must hit)
-- Evaluate your **performance** against that target
-- Adjust their **favorability** based on results
-- Grant **bonuses** (or penalties) to your golden parachute
+Your inbox will contain:
+- **Project Updates** — Status reports from department heads explaining why things are behind schedule
+- **Crisis Notifications** — Urgent matters requiring your immediate attention and eventual blame
+- **Board Directives** — Quarterly profit targets that seem reasonable until you try to meet them
+- **Performance Reviews** — The board's quarterly assessment of your continued employability
 
-When favorability drops too low, they'll terminate your employment. When it's high enough and you've accumulated sufficient bonus, you can trigger **voluntary retirement** and win.
+## Project Cards
 
-### Crises
-**30 crisis events** can trigger randomly or from failed projects. Each presents:
-- A situation requiring your response
-- Multiple choice options with different risk/reward profiles
-- Consequences that affect meters, profit, and board opinion
+Your strategic toolkit consists of **77 initiatives** across three categories:
 
-### Difficulty Settings
-Three modes named after famous CEOs:
+| Category | Description | Risk Profile |
+|----------|-------------|--------------|
+| **Revenue** | Money-making schemes of varying legality | Direct profit, collateral damage |
+| **Corporate** | Infrastructure investments that pay off "eventually" | Long-term value, short-term pain |
+| **Action** | Strategic pivots with plausible deniability | High variance, higher drama |
 
-| Difficulty | Name | Board Patience | Retirement Threshold |
-|------------|------|----------------|---------------------|
-| Easy | **The Welch** | Very patient, generous rewards | $120M |
-| Regular | **The Nadella** | Balanced expectations | $140M |
-| Hard | **The Icahn** | Activist investor, demanding | $180M |
+Each project affects profit margins and organizational health. Choose wisely. Or don't. The board will blame you either way.
 
-## AI-Generated Emails
+## Organizational Metrics
 
-InertiCorp uses a local LLM (via [LLamaSharp](https://github.com/SciSharp/LLamaSharp)) to generate dynamic email content. Emails are written in Dilbert/Office Space style corporate satire with:
+You must balance five competing priorities. The previous CEO balanced zero of them.
+
+| Meter | What It Measures | What Happens at Zero |
+|-------|------------------|---------------------|
+| **Delivery** | Whether Engineering ships anything | Products don't exist |
+| **Morale** | Employee will to continue existing here | Mass exodus, Glassdoor reviews |
+| **Governance** | Compliance, security, "doing things properly" | Regulatory intervention |
+| **Alignment** | Whether anyone knows what we're doing | Strategic incoherence |
+| **Runway** | Cash reserves and financial buffer | Payroll becomes "aspirational" |
+
+The meters are interconnected in ways that will seem arbitrary until you understand them, and then they'll seem *deliberately* arbitrary.
+
+## The Board
+
+The board has opinions about your performance. These opinions manifest as:
+
+- **Favorability** — A number representing their collective faith in you (it decreases)
+- **Quarterly Directives** — Profit targets that increase as their patience decreases
+- **Compensation Decisions** — Bonuses when you succeed, clawbacks when you don't
+- **Employment Decisions** — Self-explanatory
+
+When favorability drops below acceptable levels, you will be invited to pursue other opportunities.
+
+## Crisis Management
+
+**30 crisis events** may occur during your tenure. Each presents difficult choices:
+
+- The ethical option (low reward, high morale)
+- The profitable option (high reward, high evil score, probable consequences)
+- The middle option (mediocre on all dimensions, satisfies no one)
+
+Your responses will be documented for the inevitable post-mortem.
+
+## Difficulty Settings
+
+The board's temperament depends on who's chairing:
+
+| Mode | Namesake | Description |
+|------|----------|-------------|
+| **The Welch** | Jack Welch | Patient capital, generous rewards. The good old days. |
+| **The Nadella** | Satya Nadella | Balanced expectations. Transformation through empathy. |
+| **The Icahn** | Carl Icahn | Activist investor. Results by quarter-end or else. |
+
+Choose based on how much stress you enjoy.
+
+## AI-Powered Communications
+
+InertiCorp has deployed a local language model to generate authentic corporate correspondence. All emails are written in the house style:
+
 - Passive-aggressive status updates
-- Credit-taking and blame-shifting
-- Meaningless corporate buzzwords
-- Panicked crisis communications
+- Strategic credit-taking and blame redistribution
+- Buzzword-compliant messaging
+- Appropriately panicked crisis communications
 
-The AI knows who is sending each email and maintains character consistency. GPU acceleration is supported for faster generation.
+The AI knows exactly who is sending each email and maintains character consistency. It has been explicitly instructed never to break character or acknowledge that any of this is satirical. *It's not satirical. This is how corporations work.*
 
-### Supported Models
-The game works with GGUF-format models. Recommended:
-- **Phi-3 Mini** (3.8B) - Good balance of quality and speed
-- **Qwen2** (1.5B) - Fast generation for slower hardware
-- **TinyLlama** (1.1B) - Fastest, lower quality
+GPU acceleration is available for executives who value their time.
 
-## Technical Stack
+---
 
-- **Engine**: Godot 4.5.1 (C#/.NET 8.0)
-- **Core**: Deterministic simulation, UI-agnostic
-- **LLM**: LLamaSharp 0.25.0 with CUDA 12 support
-- **Tests**: 440 unit tests
+## Technical Specifications
 
-## Development
+*For the IT department's records:*
+
+- **Platform**: Godot 4.5.1 (C#/.NET 8.0)
+- **Architecture**: Deterministic simulation core, UI layer, 440 unit tests
+- **LLM Integration**: LLamaSharp 0.25.0, CUDA 12 supported
+- **Recommended Models**: Phi-3 Mini (3.8B), Qwen2 (1.5B), TinyLlama (1.1B)
 
 ```bash
-# Build
+# Build (requires .NET 8 SDK)
 dotnet build
 
 # Run tests
 dotnet test
 
-# Run specific test category
+# Verify nothing is broken before blaming someone else
 dotnet test --filter "BalanceTests"
 ```
 
-### Project Structure
+### GPU Configuration
 
-```
-src/
-├── InertiCorp.Core/     # Simulation engine (Godot-free, deterministic)
-│   ├── Cards/           # Project and crisis card logic
-│   ├── Content/         # JSON card definitions
-│   ├── Email/           # Email generation and templates
-│   └── Llm/             # LLM integration
-├── InertiCorp.Game/     # Godot UI layer
-│   ├── Dashboard/       # Main game interface
-│   ├── Settings/        # Options and configuration
-│   └── Audio/           # Music management
-tests/
-└── InertiCorp.Core.Tests/  # Unit tests
-```
+For CUDA acceleration, place the following in `src/InertiCorp.Core/native/cuda12/`:
+- `cublas64_12.dll`
+- `cublasLt64_12.dll`
+- `cudart64_12.dll`
 
-### GPU Support
+The system falls back to CPU inference if CUDA is unavailable. This is fine. Everything is fine.
 
-For CUDA acceleration:
-1. NVIDIA GPU with CUDA Compute 5.0+
-2. NVIDIA drivers 516.x or newer
-3. Place CUDA runtime DLLs in `src/InertiCorp.Core/native/cuda12/`:
-   - `cublas64_12.dll`
-   - `cublasLt64_12.dll`
-   - `cudart64_12.dll`
+---
 
-The game falls back to CPU if CUDA is unavailable.
+## Acknowledgments
 
-## AI Guardrails
+See [CLAUDE.md](CLAUDE.md) for the engineering guardrails that kept this project on track, or at least prevented it from going *too* far off track.
 
-See [CLAUDE.md](CLAUDE.md) for engineering constraints and working practices used during development.
+---
 
-## License
+*This document is the property of InertiCorp Holdings, LLC. Unauthorized distribution will be handled by Legal. They're very good at handling things.*
 
-MIT
+**Good luck. You'll need it.**
+
+— The Board
