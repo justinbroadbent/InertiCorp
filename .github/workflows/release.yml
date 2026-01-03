@@ -143,6 +143,31 @@ jobs:
           Get-ChildItem $dataDir -File | Select-Object -First 10 Name
         shell: pwsh
 
+      - name: Copy native DLLs to cuda12 directory
+        run: |
+          $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
+          $cuda12Dir = "$dataDir\runtimes\win-x64\native\cuda12"
+
+          # Ensure cuda12 directory exists
+          New-Item -ItemType Directory -Force -Path $cuda12Dir
+
+          # Copy LLamaSharp native DLLs from data dir root to cuda12
+          # These are needed alongside the CUDA runtime DLLs for GPU inference
+          $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll")
+          foreach ($dll in $nativeDlls) {
+            $srcPath = "$dataDir\$dll"
+            if (Test-Path $srcPath) {
+              Copy-Item $srcPath $cuda12Dir -Force
+              Write-Host "Copied $dll to cuda12"
+            } else {
+              Write-Host "Warning: $dll not found in data directory"
+            }
+          }
+
+          Write-Host "cuda12 directory contents:"
+          Get-ChildItem $cuda12Dir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+        shell: pwsh
+
       - name: List build directory
         run: ls -laR build/
         shell: bash

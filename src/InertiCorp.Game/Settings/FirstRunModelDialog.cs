@@ -12,15 +12,22 @@ public partial class FirstRunModelDialog : Control
 {
     private ModelManager? _modelManager;
     private Label? _statusLabel;
+    private Label? _hardwareLabel;
     private Label? _pleaseHoldLabel;
     private ProgressBar? _progressBar;
-    private Button? _downloadButton;
+    private Button? _liteButton;      // TinyLlama - fast, CPU-friendly
+    private Button? _standardButton;  // Phi-3 - higher quality, GPU recommended
     private Button? _skipButton;
     private Button? _cancelButton;
     private Button? _continueButton;
     private Button? _muteButton;
+    private Label? _modelNameLabel;
+    private Label? _modelDescLabel;
+    private Label? _modelSizeLabel;
     private bool _downloadComplete;
     private CancellationTokenSource? _downloadCts;
+    private string _selectedModelId = ModelCatalog.DefaultCpuModelId;  // Default to CPU-friendly
+    private bool _gpuDetected;
 
     /// <summary>
     /// Whether the first-run dialog is currently visible.
@@ -36,6 +43,14 @@ public partial class FirstRunModelDialog : Control
         IsActive = true;
         _modelManager = new ModelManager();
         _modelManager.ModelStatusChanged += OnModelStatusChanged;
+
+        // Initialize LLM diagnostics to detect GPU
+        LlmDiagnostics.Initialize();
+        _gpuDetected = LlmDiagnostics.GpuDetected;
+
+        // Select recommended model based on hardware
+        _selectedModelId = _gpuDetected ? ModelCatalog.DefaultGpuModelId : ModelCatalog.DefaultCpuModelId;
+
         SetupUI();
     }
 
@@ -114,18 +129,47 @@ public partial class FirstRunModelDialog : Control
         subtitle.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
         vbox.AddChild(subtitle);
 
+        // Logo - centered
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
+        {
+            var logoContainer = new CenterContainer();
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(200, 70)
+            };
+            logoContainer.AddChild(logo);
+            vbox.AddChild(logoContainer);
+        }
+
         vbox.AddChild(new HSeparator());
+
+        // Hardware detection status
+        var hardwareStatus = _gpuDetected
+            ? $"NVIDIA GPU detected - Standard Mode recommended"
+            : "No GPU detected - Lite Mode recommended for smooth gameplay";
+        var hardwareColor = _gpuDetected
+            ? new Color(0.4f, 1.0f, 0.6f)   // Green for GPU
+            : new Color(1.0f, 0.8f, 0.4f);  // Orange for CPU-only
+
+        _hardwareLabel = new Label
+        {
+            Text = hardwareStatus,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        _hardwareLabel.AddThemeFontSizeOverride("font_size", 14);
+        _hardwareLabel.AddThemeColorOverride("font_color", hardwareColor);
+        vbox.AddChild(_hardwareLabel);
 
         // Explanation - corporate CEO pitch
         var explanationLabel = new Label
         {
-            Text = "The InertiCorp Executive Training Simulator leverages cutting-edge " +
-                   "Artificial Intelligence to deliver a truly immersive leadership experience.\n\n" +
-                   "Our proprietary Cognitive Synergy Engine™ generates dynamic, context-aware " +
-                   "communications that respond to YOUR strategic decisions in real-time. " +
-                   "This is the same technology used by Fortune 500 companies to develop " +
-                   "their next generation of C-suite executives.\n\n" +
-                   "Download typically takes 5-10 minutes. The model runs 100% locally - " +
+            Text = "The InertiCorp Cognitive Synergy Engine™ generates dynamic, " +
+                   "context-aware corporate communications in real-time.\n\n" +
+                   "Choose your AI configuration below. Models run 100% locally - " +
                    "your strategic insights remain confidential.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             HorizontalAlignment = HorizontalAlignment.Center
@@ -190,43 +234,67 @@ public partial class FirstRunModelDialog : Control
         var spacer = new Control { SizeFlagsVertical = SizeFlags.ExpandFill };
         vbox.AddChild(spacer);
 
-        // Buttons
+        // Model selection buttons
+        var modelButtonContainer = new HBoxContainer();
+        modelButtonContainer.AddThemeConstantOverride("separation", 12);
+        var modelButtonWrapper = new CenterContainer();
+        modelButtonWrapper.AddChild(modelButtonContainer);
+        vbox.AddChild(modelButtonWrapper);
+
+        var liteModel = ModelCatalog.CpuDefault;
+        var standardModel = ModelCatalog.GpuDefault;
+
+        _liteButton = new Button
+        {
+            Text = $"Lite Mode ({FormatSize(liteModel.SizeBytes)})",
+            CustomMinimumSize = new Vector2(160, 45),
+            TooltipText = $"{liteModel.Name}: {liteModel.Description}"
+        };
+        _liteButton.AddThemeFontSizeOverride("font_size", 14);
+        _liteButton.Pressed += () => OnModelSelected(liteModel.Id);
+        modelButtonContainer.AddChild(_liteButton);
+
+        _standardButton = new Button
+        {
+            Text = $"Standard Mode ({FormatSize(standardModel.SizeBytes)})",
+            CustomMinimumSize = new Vector2(180, 45),
+            TooltipText = $"{standardModel.Name}: {standardModel.Description}"
+        };
+        _standardButton.AddThemeFontSizeOverride("font_size", 14);
+        _standardButton.Pressed += () => OnModelSelected(standardModel.Id);
+        modelButtonContainer.AddChild(_standardButton);
+
+        // Highlight the recommended button
+        var recommendedButton = _gpuDetected ? _standardButton : _liteButton;
+        recommendedButton.AddThemeColorOverride("font_color", new Color(0.4f, 1.0f, 0.6f));
+
+        // Other buttons
         var buttonContainer = new HBoxContainer();
         buttonContainer.AddThemeConstantOverride("separation", 16);
         var buttonWrapper = new CenterContainer();
         buttonWrapper.AddChild(buttonContainer);
         vbox.AddChild(buttonWrapper);
 
-        _downloadButton = new Button
-        {
-            Text = "Enable AI (2.3 GB)",
-            CustomMinimumSize = new Vector2(180, 45),
-            TooltipText = "Download the AI model for dynamic, personalized emails"
-        };
-        _downloadButton.AddThemeFontSizeOverride("font_size", 16);
-        _downloadButton.Pressed += OnDownloadPressed;
-        buttonContainer.AddChild(_downloadButton);
-
         _skipButton = new Button
         {
-            Text = "Use Classic Mode",
-            CustomMinimumSize = new Vector2(140, 45),
+            Text = "No AI (Classic Mode)",
+            CustomMinimumSize = new Vector2(150, 40),
             TooltipText = "Use pre-written corporate templates (no download required)"
         };
-        _skipButton.AddThemeFontSizeOverride("font_size", 14);
-        _skipButton.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.65f));
+        _skipButton.AddThemeFontSizeOverride("font_size", 13);
+        _skipButton.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
         _skipButton.Pressed += OnSkipPressed;
+        buttonContainer.AddChild(_skipButton);
 
         _cancelButton = new Button
         {
             Text = "Cancel Download",
-            CustomMinimumSize = new Vector2(140, 45),
+            CustomMinimumSize = new Vector2(140, 40),
             Visible = false
         };
-        _cancelButton.AddThemeFontSizeOverride("font_size", 14);
+        _cancelButton.AddThemeFontSizeOverride("font_size", 13);
         _cancelButton.AddThemeColorOverride("font_color", new Color(0.9f, 0.5f, 0.5f));
         _cancelButton.Pressed += OnCancelPressed;
-        buttonContainer.AddChild(_skipButton);
         buttonContainer.AddChild(_cancelButton);
 
         _continueButton = new Button
@@ -241,9 +309,15 @@ public partial class FirstRunModelDialog : Control
         buttonContainer.AddChild(_continueButton);
     }
 
+    private void OnModelSelected(string modelId)
+    {
+        _selectedModelId = modelId;
+        StartDownload();
+    }
+
     private Control CreateModelInfoBox()
     {
-        var modelInfo = ModelCatalog.Default;
+        var modelInfo = ModelCatalog.GetRecommendedDefault(_gpuDetected);
 
         var container = new PanelContainer();
         var style = new StyleBoxFlat
@@ -281,7 +355,7 @@ public partial class FirstRunModelDialog : Control
         iconLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.8f, 1.0f));
         hbox.AddChild(iconLabel);
 
-        // Model details
+        // Model details - stored for later updates
         var infoVbox = new VBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill
@@ -289,22 +363,32 @@ public partial class FirstRunModelDialog : Control
         infoVbox.AddThemeConstantOverride("separation", 4);
         hbox.AddChild(infoVbox);
 
-        var nameLabel = new Label { Text = modelInfo.Name };
-        nameLabel.AddThemeFontSizeOverride("font_size", 16);
-        nameLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
-        infoVbox.AddChild(nameLabel);
+        _modelNameLabel = new Label { Text = modelInfo.Name };
+        _modelNameLabel.AddThemeFontSizeOverride("font_size", 16);
+        _modelNameLabel.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
+        infoVbox.AddChild(_modelNameLabel);
 
-        var descLabel = new Label { Text = modelInfo.Description };
-        descLabel.AddThemeFontSizeOverride("font_size", 13);
-        descLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.65f));
-        infoVbox.AddChild(descLabel);
+        _modelDescLabel = new Label { Text = modelInfo.Description };
+        _modelDescLabel.AddThemeFontSizeOverride("font_size", 13);
+        _modelDescLabel.AddThemeColorOverride("font_color", new Color(0.6f, 0.6f, 0.65f));
+        infoVbox.AddChild(_modelDescLabel);
 
-        var sizeLabel = new Label { Text = $"Size: {FormatSize(modelInfo.SizeBytes)}" };
-        sizeLabel.AddThemeFontSizeOverride("font_size", 12);
-        sizeLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
-        infoVbox.AddChild(sizeLabel);
+        _modelSizeLabel = new Label { Text = $"Size: {FormatSize(modelInfo.SizeBytes)}" };
+        _modelSizeLabel.AddThemeFontSizeOverride("font_size", 12);
+        _modelSizeLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
+        infoVbox.AddChild(_modelSizeLabel);
 
         return container;
+    }
+
+    private void UpdateModelInfoDisplay()
+    {
+        var modelInfo = ModelCatalog.GetById(_selectedModelId);
+        if (modelInfo == null) return;
+
+        if (_modelNameLabel != null) _modelNameLabel.Text = modelInfo.Name;
+        if (_modelDescLabel != null) _modelDescLabel.Text = modelInfo.Description;
+        if (_modelSizeLabel != null) _modelSizeLabel.Text = $"Size: {FormatSize(modelInfo.SizeBytes)}";
     }
 
     private void OnModelStatusChanged(string modelId)
@@ -316,12 +400,13 @@ public partial class FirstRunModelDialog : Control
     {
         if (_modelManager == null) return;
 
-        var status = _modelManager.GetStatus(ModelCatalog.DefaultModelId);
+        var status = _modelManager.GetStatus(_selectedModelId);
 
         switch (status)
         {
             case ModelStatus.Downloading:
-                _downloadButton!.Visible = false;
+                _liteButton!.Visible = false;
+                _standardButton!.Visible = false;
                 _skipButton!.Visible = false;
                 _progressBar!.Visible = true;
                 _statusLabel!.Text = "Downloading...";
@@ -331,7 +416,8 @@ public partial class FirstRunModelDialog : Control
             case ModelStatus.Downloaded:
             case ModelStatus.Active:
                 _downloadComplete = true;
-                _downloadButton!.Visible = false;
+                _liteButton!.Visible = false;
+                _standardButton!.Visible = false;
                 _skipButton!.Visible = false;
                 _progressBar!.Visible = false;
                 _muteButton!.Visible = false;
@@ -343,17 +429,21 @@ public partial class FirstRunModelDialog : Control
                 // Auto-activate the model
                 if (_modelManager.ActiveModelId == null)
                 {
-                    _modelManager.SetActiveModel(ModelCatalog.DefaultModelId);
+                    _modelManager.SetActiveModel(_selectedModelId);
                 }
                 break;
         }
     }
 
-    private async void OnDownloadPressed()
+    private async void StartDownload()
     {
         if (_modelManager == null) return;
 
-        _downloadButton!.Visible = false;
+        // Update model info display
+        UpdateModelInfoDisplay();
+
+        _liteButton!.Visible = false;
+        _standardButton!.Visible = false;
         _skipButton!.Visible = false;
         _cancelButton!.Visible = true;
         _progressBar!.Visible = true;
@@ -376,8 +466,8 @@ public partial class FirstRunModelDialog : Control
 
         try
         {
-            await _modelManager.DownloadAsync(ModelCatalog.DefaultModelId, progress, _downloadCts.Token);
-            GD.Print("First-run model download complete");
+            await _modelManager.DownloadAsync(_selectedModelId, progress, _downloadCts.Token);
+            GD.Print($"First-run model download complete: {_selectedModelId}");
         }
         catch (OperationCanceledException)
         {
@@ -408,8 +498,10 @@ public partial class FirstRunModelDialog : Control
 
     private void ResetToInitialState()
     {
-        _downloadButton!.Visible = true;
-        _downloadButton.Disabled = false;
+        _liteButton!.Visible = true;
+        _liteButton.Disabled = false;
+        _standardButton!.Visible = true;
+        _standardButton.Disabled = false;
         _skipButton!.Visible = true;
         _skipButton.Disabled = false;
         _cancelButton!.Visible = false;

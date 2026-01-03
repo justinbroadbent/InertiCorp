@@ -153,26 +153,42 @@ public static class LlmDiagnostics
             }
         }
 
-        // Configure LLamaSharp - explicitly set the path to the CUDA12 llama.dll
-        var llamaCudaPath = Path.Combine(cuda12Path, "llama.dll");
-        if (File.Exists(llamaCudaPath))
+        // Set backend path environment variable FIRST, before any config
+        // This tells llama.cpp where to find backend plugins (ggml-cuda.dll, ggml-cpu.dll)
+        if (Directory.Exists(cuda12Path))
         {
-            Debug.WriteLine($"[LlmDiagnostics] Found CUDA12 llama.dll, setting explicit path: {llamaCudaPath}");
-
-            // Set environment variable so llama.cpp can find backend plugins (ggml-cuda.dll)
             Environment.SetEnvironmentVariable("GGML_BACKEND_PATH", cuda12Path);
             Debug.WriteLine($"[LlmDiagnostics] Set GGML_BACKEND_PATH={cuda12Path}");
+        }
 
+        // Also check base directory for native libs (Godot exports put them there)
+        var baseLlamaPath = Path.Combine(baseDir, "llama.dll");
+        var baseGgmlCudaPath = Path.Combine(baseDir, "ggml-cuda.dll");
+        Debug.WriteLine($"[LlmDiagnostics] Base llama.dll exists: {File.Exists(baseLlamaPath)}");
+        Debug.WriteLine($"[LlmDiagnostics] Base ggml-cuda.dll exists: {File.Exists(baseGgmlCudaPath)}");
+
+        // Configure LLamaSharp - check multiple paths for llama.dll
+        var llamaCudaPath = Path.Combine(cuda12Path, "llama.dll");
+        var llamaPath = File.Exists(llamaCudaPath) ? llamaCudaPath :
+                        File.Exists(baseLlamaPath) ? baseLlamaPath : null;
+
+        if (llamaPath != null)
+        {
+            Debug.WriteLine($"[LlmDiagnostics] Using llama.dll from: {llamaPath}");
+
+            // Configure with explicit library path, CUDA enabled, AND auto-fallback for CPU ops
             NativeLibraryConfig.LLama
-                .WithLibrary(llamaCudaPath)
+                .WithLibrary(llamaPath)
+                .WithSearchDirectories([cuda12Path, baseDir])  // Search both locations for backends
                 .WithCuda()  // Enable CUDA backend loading
+                .WithAutoFallback()  // CRITICAL: Enables CPU backend for mixed operations
                 .WithLogCallback(OnNativeLog);
         }
         else if (Directory.Exists(cuda12Path))
         {
             Debug.WriteLine("[LlmDiagnostics] Configuring with CUDA12 search path");
             NativeLibraryConfig.LLama
-                .WithSearchDirectories([cuda12Path])
+                .WithSearchDirectories([cuda12Path, baseDir])
                 .WithCuda()
                 .WithAutoFallback()
                 .WithLogCallback(OnNativeLog);

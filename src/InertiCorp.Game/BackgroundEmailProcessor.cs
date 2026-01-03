@@ -50,9 +50,33 @@ public partial class BackgroundEmailProcessor : Node
     private readonly object _processingLock = new();
 
     /// <summary>
-    /// Timeout for AI generation before using fallback content.
+    /// Default timeout for AI generation before using fallback content.
     /// </summary>
-    public const float GenerationTimeoutSeconds = 70.0f;
+    public const float DefaultGenerationTimeoutSeconds = 70.0f;
+
+    /// <summary>
+    /// Gets the adaptive timeout based on current model tier and hardware.
+    /// </summary>
+    public static float GetAdaptiveTimeout()
+    {
+        var modelManager = LlmServiceManager.GetModelManager();
+        var modelId = modelManager?.ActiveModelId;
+        var modelInfo = modelId != null ? ModelCatalog.GetById(modelId) : null;
+        var gpuAvailable = LlmDiagnostics.GpuDetected;
+
+        if (modelInfo == null)
+            return DefaultGenerationTimeoutSeconds;
+
+        return (modelInfo.Tier, gpuAvailable) switch
+        {
+            (ModelTier.Fast, _) => 45.0f,         // TinyLlama - always fast even on CPU
+            (ModelTier.Balanced, true) => 60.0f,  // Phi-3 on GPU
+            (ModelTier.Balanced, false) => 120.0f,// Phi-3 on CPU (slow but allow it)
+            (ModelTier.Quality, true) => 90.0f,   // Mistral 7B on GPU
+            (ModelTier.Quality, false) => 180.0f, // Mistral 7B on CPU (not recommended)
+            _ => DefaultGenerationTimeoutSeconds
+        };
+    }
 
     /// <summary>
     /// Minimum display time for projects in the queue UI.
@@ -376,7 +400,9 @@ public partial class BackgroundEmailProcessor : Node
             {
                 try
                 {
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(GenerationTimeoutSeconds));
+                    var timeout = GetAdaptiveTimeout();
+                    GD.Print($"[BackgroundProcessor] Using timeout: {timeout}s (GPU: {LlmDiagnostics.GpuDetected})");
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
 
                     // Run LLM on background thread to avoid blocking main game thread (audio, etc.)
                     var title = card.Title;
@@ -465,7 +491,8 @@ public partial class BackgroundEmailProcessor : Node
             {
                 try
                 {
-                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(GenerationTimeoutSeconds));
+                    var timeout = GetAdaptiveTimeout();
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
 
                     // Run LLM on background thread to avoid blocking main game thread
                     var title = card.Title;
@@ -571,7 +598,8 @@ public partial class BackgroundEmailProcessor : Node
             var emailService = LlmServiceManager.GetEmailService();
             string? aiBody = null;
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(GenerationTimeoutSeconds));
+            var timeout = GetAdaptiveTimeout();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
 
             // Run LLM on background thread to avoid blocking main game thread
             aiBody = await Task.Run(async () =>

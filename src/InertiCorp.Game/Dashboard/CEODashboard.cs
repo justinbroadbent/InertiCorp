@@ -1160,6 +1160,20 @@ public partial class CEODashboard : Control
         settingsButton.AddThemeFontSizeOverride("font_size", 20);
         settingsButton.Pressed += OnSettingsPressed;
         hbox.AddChild(settingsButton);
+
+        // Logo in top right corner
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
+        {
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(120, 40)
+            };
+            hbox.AddChild(logo);
+        }
     }
 
     private void OnSettingsPressed()

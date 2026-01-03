@@ -6,9 +6,19 @@ namespace InertiCorp.Core.Llm;
 public static class ModelCatalog
 {
     /// <summary>
-    /// The default model ID to use for first-time setup.
+    /// The default model ID for GPU users (higher quality).
     /// </summary>
-    public const string DefaultModelId = "phi3-mini";
+    public const string DefaultGpuModelId = "phi3-mini";
+
+    /// <summary>
+    /// The default model ID for CPU-only users (faster, smaller).
+    /// </summary>
+    public const string DefaultCpuModelId = "tinyllama";
+
+    /// <summary>
+    /// The default model ID to use for first-time setup (GPU model for backwards compatibility).
+    /// </summary>
+    public const string DefaultModelId = DefaultGpuModelId;
 
     /// <summary>
     /// Prompt format for Phi-3 models.
@@ -99,4 +109,22 @@ public static class ModelCatalog
     /// </summary>
     public static IEnumerable<ModelInfo> GetByTier(ModelTier tier)
         => Models.Where(m => m.Tier == tier);
+
+    /// <summary>
+    /// Gets the recommended default model based on hardware capabilities.
+    /// </summary>
+    /// <param name="hasGpu">Whether a compatible GPU is available.</param>
+    /// <returns>The recommended model for the hardware.</returns>
+    public static ModelInfo GetRecommendedDefault(bool hasGpu)
+        => GetById(hasGpu ? DefaultGpuModelId : DefaultCpuModelId)!;
+
+    /// <summary>
+    /// Gets the GPU-optimized model (Phi-3 Mini).
+    /// </summary>
+    public static ModelInfo GpuDefault => GetById(DefaultGpuModelId)!;
+
+    /// <summary>
+    /// Gets the CPU-optimized model (TinyLlama).
+    /// </summary>
+    public static ModelInfo CpuDefault => GetById(DefaultCpuModelId)!;
 }
