@@ -75,7 +75,7 @@ public partial class SettingsMenu : Control
         vbox.AddThemeConstantOverride("separation", 16);
         panel.AddChild(vbox);
 
-        // Logo at top
+        // Logo (replaces title)
         var logoTexture = GD.Load<Texture2D>("res://logo.png");
         if (logoTexture != null)
         {
@@ -85,21 +85,23 @@ public partial class SettingsMenu : Control
                 Texture = logoTexture,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspect,
-                CustomMinimumSize = new Vector2(180, 60)
+                CustomMinimumSize = new Vector2(280, 70)
             };
             logoContainer.AddChild(logo);
             vbox.AddChild(logoContainer);
         }
-
-        // Title
-        var title = new Label
+        else
         {
-            Text = "SETTINGS",
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        title.AddThemeFontSizeOverride("font_size", 28);
-        title.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
-        vbox.AddChild(title);
+            // Fallback to text if logo not found
+            var title = new Label
+            {
+                Text = "SETTINGS",
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            title.AddThemeFontSizeOverride("font_size", 28);
+            title.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
+            vbox.AddChild(title);
+        }
 
         // Separator
         var sep = new HSeparator();

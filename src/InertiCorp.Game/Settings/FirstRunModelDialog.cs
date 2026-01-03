@@ -139,7 +139,7 @@ public partial class FirstRunModelDialog : Control
                 Texture = logoTexture,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspect,
-                CustomMinimumSize = new Vector2(200, 70)
+                CustomMinimumSize = new Vector2(280, 70)
             };
             logoContainer.AddChild(logo);
             vbox.AddChild(logoContainer);

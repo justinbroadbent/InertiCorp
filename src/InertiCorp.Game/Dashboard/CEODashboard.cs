@@ -792,11 +792,27 @@ public partial class CEODashboard : Control
         hbox.AddThemeConstantOverride("separation", 30);
         header.AddChild(hbox);
 
-        // Title
-        var title = new Label { Text = "INERTICORP" };
-        title.AddThemeFontSizeOverride("font_size", 28);
-        title.Modulate = new Color(0.9f, 0.9f, 0.95f);
-        hbox.AddChild(title);
+        // Logo (replaces text title)
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
+        {
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(220, 55)
+            };
+            hbox.AddChild(logo);
+        }
+        else
+        {
+            // Fallback to text if logo not found
+            var title = new Label { Text = "INERTICORP" };
+            title.AddThemeFontSizeOverride("font_size", 28);
+            title.Modulate = new Color(0.9f, 0.9f, 0.95f);
+            hbox.AddChild(title);
+        }
 
         var subtitle = new Label { Text = "CEO Command Center" };
         subtitle.AddThemeFontSizeOverride("font_size", 14);
@@ -1161,19 +1177,6 @@ public partial class CEODashboard : Control
         settingsButton.Pressed += OnSettingsPressed;
         hbox.AddChild(settingsButton);
 
-        // Logo in top right corner
-        var logoTexture = GD.Load<Texture2D>("res://logo.png");
-        if (logoTexture != null)
-        {
-            var logo = new TextureRect
-            {
-                Texture = logoTexture,
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
-                CustomMinimumSize = new Vector2(120, 40)
-            };
-            hbox.AddChild(logo);
-        }
     }
 
     private void OnSettingsPressed()

@@ -256,7 +256,7 @@ public partial class ReportsPopup : Control
         title.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.95f));
         header.AddChild(title);
 
-        // Logo in header
+        // Logo in header (prominent)
         var logoTexture = GD.Load<Texture2D>("res://logo.png");
         if (logoTexture != null)
         {
@@ -265,7 +265,7 @@ public partial class ReportsPopup : Control
                 Texture = logoTexture,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspect,
-                CustomMinimumSize = new Vector2(120, 40)
+                CustomMinimumSize = new Vector2(250, 65)
             };
             header.AddChild(logo);
         }

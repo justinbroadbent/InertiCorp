@@ -85,15 +85,33 @@ public partial class GameMenu : Control
         vbox.AddThemeConstantOverride("separation", 12);
         panel.AddChild(vbox);
 
-        // Title
-        var title = new Label
+        // Logo (replaces title)
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
         {
-            Text = "INERTICORP",
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        title.AddThemeFontSizeOverride("font_size", 32);
-        title.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
-        vbox.AddChild(title);
+            var logoContainer = new CenterContainer();
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(280, 70)
+            };
+            logoContainer.AddChild(logo);
+            vbox.AddChild(logoContainer);
+        }
+        else
+        {
+            // Fallback to text if logo not found
+            var title = new Label
+            {
+                Text = "INERTICORP",
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            title.AddThemeFontSizeOverride("font_size", 32);
+            title.AddThemeColorOverride("font_color", new Color(0.9f, 0.85f, 0.7f));
+            vbox.AddChild(title);
+        }
 
         var subtitle = new Label
         {
