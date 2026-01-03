@@ -154,18 +154,36 @@ if (-not $SkipGodotExport) {
         Write-Success "Game exported successfully!"
 
         # Copy native DLLs for CUDA support
-        Write-Step "Copying native libraries..."
+        # This part is critical - without cuBLAS, you get CPU inference and sad faces
+        Write-Step "Copying native libraries (the important GPU stuff)..."
         $NativeSource = Join-Path $RepoRoot "src\InertiCorp.Core\native\cuda12"
-        $NativeDest = Join-Path $OutputDir "data_InertiCorp.Game_windows_x86_64\cuda12"
+        $DataDir = Join-Path $OutputDir "data_InertiCorp.Game_windows_x86_64"
+        $Cuda12Dest = Join-Path $DataDir "runtimes\win-x64\native\cuda12"
 
         if (Test-Path $NativeSource) {
-            if (-not (Test-Path $NativeDest)) {
-                New-Item -ItemType Directory -Path $NativeDest -Force | Out-Null
+            # Create the cuda12 directory structure that LLamaSharp expects
+            # Why so deep? Because NuGet package conventions, that's why.
+            if (-not (Test-Path $Cuda12Dest)) {
+                New-Item -ItemType Directory -Path $Cuda12Dest -Force | Out-Null
             }
-            Copy-Item "$NativeSource\*.dll" $NativeDest -Force -ErrorAction SilentlyContinue
-            Write-Success "Native libraries copied."
+
+            # Copy cuBLAS and CUDA runtime DLLs (the big ones that make GPU go brrrr)
+            $cudaDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
+            foreach ($dll in $cudaDlls) {
+                $src = Join-Path $NativeSource $dll
+                if (Test-Path $src) {
+                    Copy-Item $src $Cuda12Dest -Force
+                    Copy-Item $src $DataDir -Force  # Also to root for fallback
+                    Write-Host "       Copied $dll" -ForegroundColor DarkGray
+                }
+            }
+
+            Write-Success "CUDA libraries copied. GPU inference should work."
+            Write-Host "       (If it doesn't, blame NVIDIA, not me)" -ForegroundColor DarkGray
         } else {
-            Write-Host "[INFO] No CUDA libraries found. CPU inference will be used." -ForegroundColor Yellow
+            Write-Host "[INFO] No CUDA libraries found at: $NativeSource" -ForegroundColor Yellow
+            Write-Host "       GPU inference will not be available." -ForegroundColor Yellow
+            Write-Host "       Download cuBLAS from NVIDIA if you want the fast path." -ForegroundColor Yellow
         }
     } else {
         Write-Failure "Export failed. Check Godot output above."

@@ -423,7 +423,8 @@ public partial class FirstRunModelDialog : Control
                 _muteButton!.Visible = false;
                 _pleaseHoldLabel!.Visible = false;
                 _continueButton!.Visible = true;
-                _statusLabel!.Text = "Download complete! AI emails are now enabled.";
+                _continueButton.Text = "Restart Game";
+                _statusLabel!.Text = "Download complete! Restart required for optimal GPU performance.";
                 _statusLabel.AddThemeColorOverride("font_color", new Color(0.4f, 1.0f, 0.4f));
 
                 // Auto-activate the model
@@ -543,8 +544,18 @@ public partial class FirstRunModelDialog : Control
     private void OnContinuePressed()
     {
         MarkFirstRunComplete();
-        EmitSignal(SignalName.SetupComplete, true);
-        QueueFree();
+
+        if (_downloadComplete)
+        {
+            // Restart the game to ensure proper GPU initialization
+            // Native libraries need a fresh start for optimal performance
+            GetTree().ReloadCurrentScene();
+        }
+        else
+        {
+            EmitSignal(SignalName.SetupComplete, true);
+            QueueFree();
+        }
     }
 
     private void MarkFirstRunComplete()

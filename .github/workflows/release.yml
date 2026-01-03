@@ -64,10 +64,9 @@ jobs:
           "$GODOT" --version
         shell: bash
 
-      - name: Download CUDA Runtime DLLs
+      - name: Download CUDA Runtime and cuBLAS DLLs
         run: |
-          # Download CUDA runtime DLLs from llama.cpp release (they bundle the redistributables)
-          # Using ggml-org/llama.cpp which is the current home of the project
+          # Download CUDA runtime DLLs from llama.cpp release
           $cudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/cudart-llama-bin-win-cuda-12.4-x64.zip"
           $cudaZip = "cuda-runtime.zip"
 
@@ -78,18 +77,36 @@ jobs:
           $cudaDir = "cuda-runtime"
           Expand-Archive -Path $cudaZip -DestinationPath $cudaDir -Force
 
-          Write-Host "Extracted contents:"
-          Get-ChildItem $cudaDir -Recurse
-
-          # Create native cuda12 directory in the Core project for build to pick up
+          # Create native cuda12 directory
           $targetDir = "src/InertiCorp.Core/native/cuda12"
           New-Item -ItemType Directory -Force -Path $targetDir
 
-          # Copy the DLLs (they might be in a subdirectory)
+          # Copy the runtime DLLs
           Get-ChildItem $cudaDir -Filter "*.dll" -Recurse | Copy-Item -Destination $targetDir -Force
 
-          Write-Host "CUDA runtime DLLs installed:"
-          Get-ChildItem $targetDir
+          # Download cuBLAS from NVIDIA redistributables (required for GPU matrix operations)
+          # These are large (~500MB) but essential for GPU inference
+          $cublasUrl = "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.0.0.312_cuda12-archive.zip"
+
+          # Alternative: Use pre-extracted cuBLAS from a llama.cpp CUDA build
+          # The llama.cpp releases include cuBLAS in their full CUDA builds
+          $llamaCudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/llama-b7616-bin-win-cuda-cu12.4-x64.zip"
+          $llamaCudaZip = "llama-cuda.zip"
+
+          Write-Host "Downloading llama.cpp CUDA build (includes cuBLAS)..."
+          Invoke-WebRequest -Uri $llamaCudaUrl -OutFile $llamaCudaZip -TimeoutSec 600
+
+          $llamaCudaDir = "llama-cuda"
+          Expand-Archive -Path $llamaCudaZip -DestinationPath $llamaCudaDir -Force
+
+          Write-Host "Extracted llama.cpp CUDA contents:"
+          Get-ChildItem $llamaCudaDir -Recurse -Filter "*.dll" | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+
+          # Copy cuBLAS DLLs (cublas64_12.dll, cublasLt64_12.dll)
+          Get-ChildItem $llamaCudaDir -Filter "cublas*.dll" -Recurse | Copy-Item -Destination $targetDir -Force
+
+          Write-Host "CUDA DLLs installed:"
+          Get-ChildItem $targetDir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
         shell: pwsh
 
       - name: Generate .NET bindings
@@ -161,6 +178,21 @@ jobs:
               Write-Host "Copied $dll to cuda12"
             } else {
               Write-Host "Warning: $dll not found in data directory"
+            }
+          }
+
+          # Copy cuBLAS DLLs from the downloaded CUDA package (CRITICAL for GPU inference!)
+          $sourceDir = "src/InertiCorp.Core/native/cuda12"
+          $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
+          foreach ($dll in $cublasDlls) {
+            $srcPath = "$sourceDir\$dll"
+            if (Test-Path $srcPath) {
+              # Copy to both cuda12 and data root for maximum compatibility
+              Copy-Item $srcPath $cuda12Dir -Force
+              Copy-Item $srcPath $dataDir -Force
+              Write-Host "Copied $dll to cuda12 and data root"
+            } else {
+              Write-Host "Warning: $dll not found in source directory"
             }
           }
 
