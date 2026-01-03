@@ -64,6 +64,30 @@ jobs:
           "$GODOT" --version
         shell: bash
 
+      - name: Download CUDA Runtime DLLs
+        run: |
+          # Download CUDA runtime DLLs from llama.cpp release (they bundle the redistributables)
+          $cudaUrl = "https://github.com/ggerganov/llama.cpp/releases/download/b4654/cudart-llama-bin-win-cu12.4.1-x64.zip"
+          $cudaZip = "cuda-runtime.zip"
+
+          Write-Host "Downloading CUDA runtime DLLs..."
+          Invoke-WebRequest -Uri $cudaUrl -OutFile $cudaZip
+
+          # Extract to a temp directory
+          $cudaDir = "cuda-runtime"
+          Expand-Archive -Path $cudaZip -DestinationPath $cudaDir -Force
+
+          # Create native cuda12 directory in the Core project for build to pick up
+          $targetDir = "src/InertiCorp.Core/native/cuda12"
+          New-Item -ItemType Directory -Force -Path $targetDir
+
+          # Copy the DLLs
+          Copy-Item "$cudaDir/*.dll" $targetDir -Force
+
+          Write-Host "CUDA runtime DLLs installed:"
+          Get-ChildItem $targetDir
+        shell: pwsh
+
       - name: Generate .NET bindings
         run: |
           "$GODOT" --headless --path src/InertiCorp.Game --build-solutions --quit || true
