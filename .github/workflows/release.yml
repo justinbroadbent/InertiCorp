@@ -90,7 +90,7 @@ jobs:
 
           # Alternative: Use pre-extracted cuBLAS from a llama.cpp CUDA build
           # The llama.cpp releases include cuBLAS in their full CUDA builds
-          $llamaCudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/llama-b7616-bin-win-cuda-cu12.4-x64.zip"
+          $llamaCudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/llama-b7616-bin-win-cuda-12.4-x64.zip"
           $llamaCudaZip = "llama-cuda.zip"
 
           Write-Host "Downloading llama.cpp CUDA build (includes cuBLAS)..."
