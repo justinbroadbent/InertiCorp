@@ -16,6 +16,7 @@ public partial class GameMenu : Control
     private Control? _helpPanel;
     private Control? _aiModelsPanel;
     private ModelManager? _modelManager;
+    private string? _initialActiveModel;  // Track what model was active when menu opened
 
     [Signal]
     public delegate void ResumeGameEventHandler();
@@ -34,6 +35,7 @@ public partial class GameMenu : Control
         _modelManager = new ModelManager();
         _modelManager.ModelStatusChanged += OnModelStatusChanged;
         _modelManager.ActiveModelChanged += OnActiveModelChanged;
+        _initialActiveModel = _modelManager.ActiveModelId;  // Track for restart detection
 
         // Full-screen overlay
         SetAnchorsPreset(LayoutPreset.FullRect);
@@ -937,6 +939,56 @@ Your bonus depends on performance:
         storageLabel.AddThemeColorOverride("font_color", new Color(0.5f, 0.5f, 0.55f));
         UpdateStorageLabel(storageLabel);
         vbox.AddChild(storageLabel);
+
+        // Restart notice (shown when model selection changed)
+        var modelChanged = _initialActiveModel != _modelManager?.ActiveModelId;
+        if (modelChanged)
+        {
+            var restartNotice = new PanelContainer();
+            var noticeStyle = new StyleBoxFlat
+            {
+                BgColor = new Color(0.3f, 0.25f, 0.1f),
+                BorderWidthBottom = 1,
+                BorderWidthLeft = 1,
+                BorderWidthRight = 1,
+                BorderWidthTop = 1,
+                BorderColor = new Color(0.6f, 0.5f, 0.2f),
+                CornerRadiusBottomLeft = 4,
+                CornerRadiusBottomRight = 4,
+                CornerRadiusTopLeft = 4,
+                CornerRadiusTopRight = 4,
+                ContentMarginLeft = 12,
+                ContentMarginRight = 12,
+                ContentMarginTop = 8,
+                ContentMarginBottom = 8
+            };
+            restartNotice.AddThemeStyleboxOverride("panel", noticeStyle);
+
+            var noticeHbox = new HBoxContainer();
+            noticeHbox.AddThemeConstantOverride("separation", 12);
+            restartNotice.AddChild(noticeHbox);
+
+            var noticeLabel = new Label
+            {
+                Text = "Model changed. Restart required for optimal performance.",
+                SizeFlagsHorizontal = SizeFlags.ExpandFill
+            };
+            noticeLabel.AddThemeFontSizeOverride("font_size", 13);
+            noticeLabel.AddThemeColorOverride("font_color", new Color(1.0f, 0.9f, 0.5f));
+            noticeHbox.AddChild(noticeLabel);
+
+            var restartBtn = new Button
+            {
+                Text = "Restart Game",
+                CustomMinimumSize = new Vector2(110, 32)
+            };
+            restartBtn.AddThemeFontSizeOverride("font_size", 13);
+            restartBtn.AddThemeColorOverride("font_color", new Color(0.4f, 1.0f, 0.6f));
+            restartBtn.Pressed += () => GetTree().ReloadCurrentScene();
+            noticeHbox.AddChild(restartBtn);
+
+            vbox.AddChild(restartNotice);
+        }
 
         // Model directory info
         var pathLabel = new Label

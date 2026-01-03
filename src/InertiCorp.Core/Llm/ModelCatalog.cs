@@ -13,7 +13,7 @@ public static class ModelCatalog
     /// <summary>
     /// The default model ID for CPU-only users (faster, smaller).
     /// </summary>
-    public const string DefaultCpuModelId = "tinyllama";
+    public const string DefaultCpuModelId = "qwen25-3b";
 
     /// <summary>
     /// The default model ID to use for first-time setup (GPU model for backwards compatibility).
@@ -64,19 +64,6 @@ public static class ModelCatalog
             Tier: ModelTier.Fast,
             PromptFormat: QwenFormat,
             StopTokens: new[] { "<|im_end|>", "<|im_start|>" }
-        ),
-
-        new ModelInfo(
-            Id: "tinyllama",
-            Name: "TinyLlama 1.1B",
-            FileName: "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-            Description: "Smallest and fastest. For older hardware. Lower quality.",
-            SizeBytes: 670_000_000,
-            DownloadUrl: "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
-            Sha256Hash: "", // TODO: Compute and add
-            Tier: ModelTier.Fast,
-            PromptFormat: LlamaFormat,
-            StopTokens: new[] { "</s>", "[INST]" }
         ),
 
         new ModelInfo(

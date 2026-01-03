@@ -246,8 +246,8 @@ public partial class FirstRunModelDialog : Control
 
         _liteButton = new Button
         {
-            Text = $"Lite Mode ({FormatSize(liteModel.SizeBytes)})",
-            CustomMinimumSize = new Vector2(160, 45),
+            Text = $"Fast ({FormatSize(liteModel.SizeBytes)})",
+            CustomMinimumSize = new Vector2(150, 45),
             TooltipText = $"{liteModel.Name}: {liteModel.Description}"
         };
         _liteButton.AddThemeFontSizeOverride("font_size", 14);
@@ -256,16 +256,17 @@ public partial class FirstRunModelDialog : Control
 
         _standardButton = new Button
         {
-            Text = $"Standard Mode ({FormatSize(standardModel.SizeBytes)})",
-            CustomMinimumSize = new Vector2(180, 45),
+            Text = $"Balanced ({FormatSize(standardModel.SizeBytes)})",
+            CustomMinimumSize = new Vector2(160, 45),
             TooltipText = $"{standardModel.Name}: {standardModel.Description}"
         };
         _standardButton.AddThemeFontSizeOverride("font_size", 14);
         _standardButton.Pressed += () => OnModelSelected(standardModel.Id);
         modelButtonContainer.AddChild(_standardButton);
 
-        // Highlight the recommended button
+        // Highlight the recommended button based on GPU availability
         var recommendedButton = _gpuDetected ? _standardButton : _liteButton;
+        recommendedButton.Text += " ✓";
         recommendedButton.AddThemeColorOverride("font_color", new Color(0.4f, 1.0f, 0.6f));
 
         // Other buttons
