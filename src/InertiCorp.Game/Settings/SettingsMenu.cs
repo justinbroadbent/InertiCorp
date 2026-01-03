@@ -75,6 +75,22 @@ public partial class SettingsMenu : Control
         vbox.AddThemeConstantOverride("separation", 16);
         panel.AddChild(vbox);
 
+        // Logo at top
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
+        {
+            var logoContainer = new CenterContainer();
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(180, 60)
+            };
+            logoContainer.AddChild(logo);
+            vbox.AddChild(logoContainer);
+        }
+
         // Title
         var title = new Label
         {

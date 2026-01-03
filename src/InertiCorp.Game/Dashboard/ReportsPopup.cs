@@ -256,6 +256,20 @@ public partial class ReportsPopup : Control
         title.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.95f));
         header.AddChild(title);
 
+        // Logo in header
+        var logoTexture = GD.Load<Texture2D>("res://logo.png");
+        if (logoTexture != null)
+        {
+            var logo = new TextureRect
+            {
+                Texture = logoTexture,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspect,
+                CustomMinimumSize = new Vector2(120, 40)
+            };
+            header.AddChild(logo);
+        }
+
         // Close button
         var closeBtn = new Button
         {
