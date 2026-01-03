@@ -86,7 +86,26 @@ public static class LlmDiagnostics
 
         Debug.WriteLine("[LlmDiagnostics] Initializing - configuring CUDA preference with CPU fallback");
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        Debug.WriteLine($"[LlmDiagnostics] Base directory: {baseDir}");
+        Debug.WriteLine($"[LlmDiagnostics] AppDomain base directory: {baseDir}");
+
+        // For Godot exports, .NET assemblies are in data_* subdirectory, not the base directory
+        // We need to find the actual directory containing our assemblies
+        var assemblyDir = Path.GetDirectoryName(typeof(LlmDiagnostics).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir) && Directory.Exists(assemblyDir))
+        {
+            baseDir = assemblyDir;
+            Debug.WriteLine($"[LlmDiagnostics] Using assembly directory: {baseDir}");
+        }
+        else
+        {
+            // Fallback: look for data_* directory in the base directory (Godot export structure)
+            var dataDir = Directory.GetDirectories(baseDir, "data_*").FirstOrDefault();
+            if (dataDir != null)
+            {
+                baseDir = dataDir;
+                Debug.WriteLine($"[LlmDiagnostics] Using Godot data directory: {baseDir}");
+            }
+        }
 
         // Check CUDA12 native directory
         var cuda12Path = Path.Combine(baseDir, "runtimes", "win-x64", "native", "cuda12");
