@@ -37,6 +37,15 @@ public static class LlmDiagnostics
     private static bool _initialized;
 
     /// <summary>
+    /// Log to both Console and Debug output for visibility in both dev and release builds.
+    /// </summary>
+    private static void Log(string message)
+    {
+        Console.WriteLine(message);
+        Debug.WriteLine(message);
+    }
+
+    /// <summary>
     /// Whether CUDA/GPU was detected during initialization.
     /// </summary>
     public static bool GpuDetected { get; private set; }
@@ -84,38 +93,47 @@ public static class LlmDiagnostics
         if (_initialized) return;
         _initialized = true;
 
-        Debug.WriteLine("[LlmDiagnostics] Initializing - configuring CUDA preference with CPU fallback");
+        Log("[LlmDiagnostics] Initializing - configuring CUDA preference with CPU fallback");
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        Debug.WriteLine($"[LlmDiagnostics] AppDomain base directory: {baseDir}");
+        Log($"[LlmDiagnostics] AppDomain base directory: {baseDir}");
 
         // For Godot exports, .NET assemblies are in data_* subdirectory, not the base directory
         // We need to find the actual directory containing our assemblies
-        var assemblyDir = Path.GetDirectoryName(typeof(LlmDiagnostics).Assembly.Location);
+        var assemblyLocation = typeof(LlmDiagnostics).Assembly.Location;
+        Log($"[LlmDiagnostics] Assembly.Location: {assemblyLocation}");
+
+        var assemblyDir = Path.GetDirectoryName(assemblyLocation);
         if (!string.IsNullOrEmpty(assemblyDir) && Directory.Exists(assemblyDir))
         {
             baseDir = assemblyDir;
-            Debug.WriteLine($"[LlmDiagnostics] Using assembly directory: {baseDir}");
+            Log($"[LlmDiagnostics] Using assembly directory: {baseDir}");
         }
         else
         {
             // Fallback: look for data_* directory in the base directory (Godot export structure)
+            Log($"[LlmDiagnostics] Assembly directory not found, checking for data_* fallback");
             var dataDir = Directory.GetDirectories(baseDir, "data_*").FirstOrDefault();
             if (dataDir != null)
             {
                 baseDir = dataDir;
-                Debug.WriteLine($"[LlmDiagnostics] Using Godot data directory: {baseDir}");
+                Log($"[LlmDiagnostics] Using Godot data directory: {baseDir}");
+            }
+            else
+            {
+                Log($"[LlmDiagnostics] No data_* directory found, using base: {baseDir}");
             }
         }
 
         // Check CUDA12 native directory
         var cuda12Path = Path.Combine(baseDir, "runtimes", "win-x64", "native", "cuda12");
         var ggmlCudaPath = Path.Combine(cuda12Path, "ggml-cuda.dll");
-        Debug.WriteLine($"[LlmDiagnostics] CUDA12 path: {cuda12Path}");
-        Debug.WriteLine($"[LlmDiagnostics] ggml-cuda.dll exists: {File.Exists(ggmlCudaPath)}");
+        Log($"[LlmDiagnostics] CUDA12 path: {cuda12Path}");
+        Log($"[LlmDiagnostics] CUDA12 directory exists: {Directory.Exists(cuda12Path)}");
+        Log($"[LlmDiagnostics] ggml-cuda.dll exists: {File.Exists(ggmlCudaPath)}");
 
         // Check for NVIDIA driver (nvcuda.dll)
         var nvcudaPath = Path.Combine(Environment.SystemDirectory, "nvcuda.dll");
-        Debug.WriteLine($"[LlmDiagnostics] NVIDIA driver (nvcuda.dll) exists: {File.Exists(nvcudaPath)}");
+        Log($"[LlmDiagnostics] NVIDIA driver (nvcuda.dll) exists: {File.Exists(nvcudaPath)}");
 
         // Use Windows API to add DLL search directories for CUDA runtime
         // This is more reliable than PATH for DLL loading
@@ -128,7 +146,7 @@ public static class LlmDiagnostics
                 if (!currentPath.Contains(cuda12Path))
                 {
                     Environment.SetEnvironmentVariable("PATH", cuda12Path + ";" + baseDir + ";" + currentPath);
-                    Debug.WriteLine($"[LlmDiagnostics] Added cuda12 and base to PATH");
+                    Log($"[LlmDiagnostics] Added cuda12 and base to PATH");
                 }
 
                 // Enable user-defined DLL directories
@@ -138,37 +156,41 @@ public static class LlmDiagnostics
                 if (Directory.Exists(cuda12Path))
                 {
                     var result = AddDllDirectory(cuda12Path);
-                    Debug.WriteLine($"[LlmDiagnostics] AddDllDirectory(cuda12): {(result != IntPtr.Zero ? "success" : "failed")}");
+                    Log($"[LlmDiagnostics] AddDllDirectory(cuda12): {(result != IntPtr.Zero ? "success" : "failed")}");
                 }
 
                 // Add base directory (also contains CUDA runtime DLLs)
                 var baseResult = AddDllDirectory(baseDir);
-                Debug.WriteLine($"[LlmDiagnostics] AddDllDirectory(base): {(baseResult != IntPtr.Zero ? "success" : "failed")}");
+                Log($"[LlmDiagnostics] AddDllDirectory(base): {(baseResult != IntPtr.Zero ? "success" : "failed")}");
 
                 // Try to pre-load ggml-cuda.dll to diagnose any loading issues
                 if (File.Exists(ggmlCudaPath))
                 {
-                    Debug.WriteLine($"[LlmDiagnostics] Attempting to pre-load ggml-cuda.dll...");
+                    Log($"[LlmDiagnostics] Attempting to pre-load ggml-cuda.dll...");
                     var cudaHandle = LoadLibraryEx(ggmlCudaPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
                     if (cudaHandle != IntPtr.Zero)
                     {
-                        Debug.WriteLine($"[LlmDiagnostics] ggml-cuda.dll pre-loaded successfully!");
+                        Log($"[LlmDiagnostics] ggml-cuda.dll pre-loaded successfully!");
                         GpuDetected = true;
                     }
                     else
                     {
                         var error = GetLastError();
-                        Debug.WriteLine($"[LlmDiagnostics] ggml-cuda.dll FAILED to load! Error code: {error}");
+                        Log($"[LlmDiagnostics] ggml-cuda.dll FAILED to load! Error code: {error}");
                         // Common error codes:
                         // 126 = MODULE_NOT_FOUND (dependency missing)
                         // 193 = BAD_EXE_FORMAT (wrong architecture)
                         // 14001 = SXS_CANT_GEN_ACTCTX (manifest/side-by-side issue)
                     }
                 }
+                else
+                {
+                    Log($"[LlmDiagnostics] ggml-cuda.dll NOT FOUND at: {ggmlCudaPath}");
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[LlmDiagnostics] Failed to add DLL directories: {ex.Message}");
+                Log($"[LlmDiagnostics] Failed to add DLL directories: {ex.Message}");
             }
         }
 
@@ -177,14 +199,14 @@ public static class LlmDiagnostics
         if (Directory.Exists(cuda12Path))
         {
             Environment.SetEnvironmentVariable("GGML_BACKEND_PATH", cuda12Path);
-            Debug.WriteLine($"[LlmDiagnostics] Set GGML_BACKEND_PATH={cuda12Path}");
+            Log($"[LlmDiagnostics] Set GGML_BACKEND_PATH={cuda12Path}");
         }
 
         // Also check base directory for native libs (Godot exports put them there)
         var baseLlamaPath = Path.Combine(baseDir, "llama.dll");
         var baseGgmlCudaPath = Path.Combine(baseDir, "ggml-cuda.dll");
-        Debug.WriteLine($"[LlmDiagnostics] Base llama.dll exists: {File.Exists(baseLlamaPath)}");
-        Debug.WriteLine($"[LlmDiagnostics] Base ggml-cuda.dll exists: {File.Exists(baseGgmlCudaPath)}");
+        Log($"[LlmDiagnostics] Base llama.dll exists: {File.Exists(baseLlamaPath)}");
+        Log($"[LlmDiagnostics] Base ggml-cuda.dll exists: {File.Exists(baseGgmlCudaPath)}");
 
         // Configure LLamaSharp - check multiple paths for llama.dll
         var llamaCudaPath = Path.Combine(cuda12Path, "llama.dll");
@@ -193,7 +215,7 @@ public static class LlmDiagnostics
 
         if (llamaPath != null)
         {
-            Debug.WriteLine($"[LlmDiagnostics] Using llama.dll from: {llamaPath}");
+            Log($"[LlmDiagnostics] Using llama.dll from: {llamaPath}");
 
             // Configure with explicit library path, CUDA enabled, AND auto-fallback for CPU ops
             NativeLibraryConfig.LLama
@@ -205,7 +227,7 @@ public static class LlmDiagnostics
         }
         else if (Directory.Exists(cuda12Path))
         {
-            Debug.WriteLine("[LlmDiagnostics] Configuring with CUDA12 search path");
+            Log("[LlmDiagnostics] Configuring with CUDA12 search path");
             NativeLibraryConfig.LLama
                 .WithSearchDirectories([cuda12Path, baseDir])
                 .WithCuda()
@@ -214,14 +236,14 @@ public static class LlmDiagnostics
         }
         else
         {
-            Debug.WriteLine("[LlmDiagnostics] CUDA12 directory not found, using default config");
+            Log("[LlmDiagnostics] CUDA12 directory not found, using default config");
             NativeLibraryConfig.All
                 .WithCuda()
                 .WithAutoFallback()
                 .WithLogCallback(OnNativeLog);
         }
 
-        Debug.WriteLine("[LlmDiagnostics] Configuration complete");
+        Log("[LlmDiagnostics] Configuration complete");
     }
 
     private static void OnNativeLog(LLamaLogLevel level, string message)
