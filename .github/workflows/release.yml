@@ -168,29 +168,37 @@ jobs:
           # Ensure cuda12 directory exists
           New-Item -ItemType Directory -Force -Path $cuda12Dir
 
-          # Copy LLamaSharp native DLLs from data dir root to cuda12
-          # These are needed alongside the CUDA runtime DLLs for GPU inference
+          # IMPORTANT: Use CUDA-enabled DLLs from llama.cpp download, NOT from NuGet!
+          # The NuGet package includes CPU-only versions that don't actually use GPU.
+          $llamaCudaDir = "llama-cuda"
+
+          # Copy CUDA-enabled native DLLs from the downloaded llama.cpp CUDA build
           $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll")
           foreach ($dll in $nativeDlls) {
-            $srcPath = "$dataDir\$dll"
-            if (Test-Path $srcPath) {
-              Copy-Item $srcPath $cuda12Dir -Force
-              Write-Host "Copied $dll to cuda12"
+            # Find the DLL in the llama-cuda directory (may be in subdirectory)
+            $srcFile = Get-ChildItem $llamaCudaDir -Filter $dll -Recurse | Select-Object -First 1
+            if ($srcFile) {
+              Copy-Item $srcFile.FullName $cuda12Dir -Force
+              # Also remove any CPU-only version from data root to prevent confusion
+              $dataRootDll = "$dataDir\$dll"
+              if (Test-Path $dataRootDll) {
+                Remove-Item $dataRootDll -Force
+                Write-Host "Removed NuGet CPU version: $dll from data root"
+              }
+              Write-Host "Copied CUDA-enabled $dll ($([math]::Round($srcFile.Length / 1MB, 1)) MB) to cuda12"
             } else {
-              Write-Host "Warning: $dll not found in data directory"
+              Write-Host "Warning: $dll not found in llama-cuda download"
             }
           }
 
-          # Copy cuBLAS DLLs from the downloaded CUDA package (CRITICAL for GPU inference!)
+          # Copy cuBLAS DLLs from the downloaded CUDA package
           $sourceDir = "src/InertiCorp.Core/native/cuda12"
           $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
           foreach ($dll in $cublasDlls) {
             $srcPath = "$sourceDir\$dll"
             if (Test-Path $srcPath) {
-              # Copy to both cuda12 and data root for maximum compatibility
               Copy-Item $srcPath $cuda12Dir -Force
-              Copy-Item $srcPath $dataDir -Force
-              Write-Host "Copied $dll to cuda12 and data root"
+              Write-Host "Copied $dll to cuda12"
             } else {
               Write-Host "Warning: $dll not found in source directory"
             }

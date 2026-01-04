@@ -6,6 +6,6 @@ namespace InertiCorp.Core;
 /// </summary>
 public static class GameVersion
 {
-    public const string Version = "0.2.6";
+    public const string Version = "0.2.7";
     public const string FullVersion = "v" + Version;
 }

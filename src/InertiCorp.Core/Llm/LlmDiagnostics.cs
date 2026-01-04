@@ -36,13 +36,34 @@ public static class LlmDiagnostics
     private static readonly object _lock = new();
     private static bool _initialized;
 
+    private static string? _logFilePath;
+
     /// <summary>
-    /// Log to both Console and Debug output for visibility in both dev and release builds.
+    /// Log to Console, Debug, and a diagnostic file for visibility in release builds.
     /// </summary>
     private static void Log(string message)
     {
         Console.WriteLine(message);
         Debug.WriteLine(message);
+
+        // Also write to a diagnostic file since Godot doesn't capture Console output
+        try
+        {
+            if (_logFilePath == null)
+            {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                var logDir = Path.Combine(appData, "InertiCorp");
+                Directory.CreateDirectory(logDir);
+                _logFilePath = Path.Combine(logDir, "llm_diagnostics.log");
+                // Clear previous log
+                File.WriteAllText(_logFilePath, $"=== LLM Diagnostics Log - {DateTime.Now} ===\n");
+            }
+            File.AppendAllText(_logFilePath, message + "\n");
+        }
+        catch
+        {
+            // Ignore file write errors
+        }
     }
 
     /// <summary>
