@@ -181,14 +181,27 @@ jobs:
             Write-Host "ERROR: CPU runtimes not found at $cpuRuntimes"
           }
 
-          # Get CUDA12 backend runtimes
-          $cudaRuntimes = "$nugetRuntimesBase\llamasharp.backend.cuda12\0.25.0\runtimes\win-x64\native\cuda12"
-          if (Test-Path $cudaRuntimes) {
-            New-Item -ItemType Directory -Force -Path "$runtimesDir\cuda12"
-            Copy-Item "$cudaRuntimes\*" "$runtimesDir\cuda12" -Recurse -Force
-            Write-Host "Copied CUDA12 runtimes from NuGet"
-          } else {
-            Write-Host "ERROR: CUDA12 runtimes not found at $cudaRuntimes"
+          # Get CUDA12 backend runtimes (v0.25.0+ uses separate Windows package)
+          $cudaRuntimesPaths = @(
+            "$nugetRuntimesBase\llamasharp.backend.cuda12.windows\0.25.0\runtimes\win-x64\native\cuda12",
+            "$nugetRuntimesBase\llamasharp.backend.cuda12\0.25.0\runtimes\win-x64\native\cuda12"
+          )
+          $cudaFound = $false
+          foreach ($cudaRuntimes in $cudaRuntimesPaths) {
+            if (Test-Path $cudaRuntimes) {
+              New-Item -ItemType Directory -Force -Path "$runtimesDir\cuda12"
+              Copy-Item "$cudaRuntimes\*" "$runtimesDir\cuda12" -Recurse -Force
+              Write-Host "Copied CUDA12 runtimes from: $cudaRuntimes"
+              $cudaFound = $true
+              break
+            }
+          }
+          if (-not $cudaFound) {
+            Write-Host "ERROR: CUDA12 runtimes not found. Checked paths:"
+            foreach ($p in $cudaRuntimesPaths) { Write-Host "  - $p" }
+            # List what's actually in the nuget packages folder
+            Write-Host "Available packages:"
+            Get-ChildItem "$nugetRuntimesBase\llamasharp*" -Directory | ForEach-Object { Write-Host "  - $($_.Name)" }
           }
 
           # Add cuBLAS DLLs to cuda12 folder (NuGet doesn't include these)
