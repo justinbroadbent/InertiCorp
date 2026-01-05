@@ -56,7 +56,10 @@ public partial class GameManager : Node
         int RunwayDelta,
         int ProfitDelta,
         int EvilScoreDelta,
-        int FavorabilityDelta);
+        int FavorabilityDelta,
+        OutcomeTier? OutcomeTier = null,
+        string? ProfitImpact = null,
+        string? MeterEffects = null);
 
     /// <summary>
     /// The current crisis event card being displayed (null if not in crisis phase).
@@ -505,6 +508,18 @@ public partial class GameManager : Node
         var input = QuarterInput.ForQueuedCard(cardId);
         var (newState, log) = QuarterEngine.Advance(CurrentState, input, _rng);
 
+        // Capture outcome from log immediately (before LastLog can be overwritten by phase changes)
+        var outcome = log.Entries.FirstOrDefault(e => e.OutcomeTier != null)?.OutcomeTier;
+        var profitEntry = log.Entries.FirstOrDefault(e => e.Message.StartsWith("Profit impact:"));
+        var profitImpact = profitEntry?.Message.Replace("Profit impact: ", "");
+        var meterChanges = log.Entries
+            .Where(e => e.Category == LogCategory.MeterChange)
+            .Select(e => $"{e.Meter}: {(e.Delta >= 0 ? "+" : "")}{e.Delta}")
+            .ToList();
+        var meterEffects = meterChanges.Count > 0 ? string.Join(", ", meterChanges) : null;
+
+        GD.Print($"[GameManager] Captured outcome for {cardId}: {outcome?.ToString() ?? "null"} (stored before phase changes)");
+
         // Calculate the deltas (what changed)
         var deltas = new DeferredCardEffects(
             DeliveryDelta: newState.Org.Delivery - preOrg.Delivery,
@@ -514,7 +529,10 @@ public partial class GameManager : Node
             RunwayDelta: newState.Org.Runway - preOrg.Runway,
             ProfitDelta: newState.CEO.CurrentQuarterProfit - preCEO.CurrentQuarterProfit,
             EvilScoreDelta: newState.CEO.EvilScore - preCEO.EvilScore,
-            FavorabilityDelta: newState.CEO.BoardFavorability - preCEO.BoardFavorability);
+            FavorabilityDelta: newState.CEO.BoardFavorability - preCEO.BoardFavorability,
+            OutcomeTier: outcome,
+            ProfitImpact: profitImpact,
+            MeterEffects: meterEffects);
 
         _deferredEffects[cardId] = deltas;
 
@@ -581,6 +599,21 @@ public partial class GameManager : Node
 
         GD.Print($"[GameManager] Applied deferred effects for card {cardId}");
         EmitSignal(SignalName.StateChanged);
+    }
+
+    /// <summary>
+    /// Gets the stored outcome info for a card (captured when card was played, before phase changes).
+    /// This avoids race conditions where LastLog is overwritten by subsequent phase transitions.
+    /// </summary>
+    public (string Outcome, string? ProfitImpact, string? MeterEffects)? GetStoredOutcome(string cardId)
+    {
+        if (!_deferredEffects.TryGetValue(cardId, out var effects))
+        {
+            return null;
+        }
+
+        var outcome = effects.OutcomeTier?.ToString() ?? "Expected";
+        return (outcome, effects.ProfitImpact, effects.MeterEffects);
     }
 
     /// <summary>
@@ -800,6 +833,31 @@ public partial class GameManager : Node
             var (crisisState, crisisLog) = QuarterEngine.Advance(CurrentState, QuarterInput.Empty, _rng);
             CurrentState = crisisState;
             LogPhase(crisisLog);
+
+            // If a crisis was triggered (from follow-up or random draw), create the inbox thread
+            if (CurrentState.CurrentCrisis is not null)
+            {
+                var crisisCard = CurrentState.CurrentCrisis;
+                GD.Print($"[GameManager] Crisis triggered during Crisis phase: {crisisCard.Title}");
+
+                // Generate the crisis email
+                var emailGen = new Core.Email.EmailGenerator(_rng.NextInt(0, int.MaxValue));
+                var crisisThread = emailGen.CreateCrisisThread(
+                    crisisCard,
+                    CurrentState.Quarter.QuarterNumber,
+                    CurrentState.Org.Alignment,
+                    CurrentState.CEO.BoardPressureLevel,
+                    CurrentState.CEO.EvilScore);
+
+                // Set OriginatingCardId so NavigateToUnresolvedCrisis can find this thread
+                crisisThread = crisisThread with { OriginatingCardId = crisisCard.EventId };
+
+                var newInbox = CurrentState.Inbox.WithThreadAdded(crisisThread);
+                CurrentState = CurrentState.WithInbox(newInbox);
+
+                // Trigger async AI generation to update the email content
+                TriggerCrisisAiGeneration(crisisThread.ThreadId, crisisCard.Title, crisisCard.Description, isResolution: false);
+            }
         }
 
         // Always go directly to Resolution - crises handled as inbox items there

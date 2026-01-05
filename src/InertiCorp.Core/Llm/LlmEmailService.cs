@@ -92,6 +92,57 @@ public sealed class LlmEmailService : IDisposable
         "Reference ongoing transformation initiatives"
     ];
 
+    // Varied opening phrases for Expected outcomes (corporate spin)
+    // Small LLMs copy examples verbatim, so we rotate through different opener styles
+    private static readonly string[] ExpectedOpeners =
+    [
+        "Start with: 'While we encountered [obstacle]...' then pivot to something positive",
+        "Start with: 'The team navigated [challenge] and...' focusing on resilience",
+        "Start with: 'Given the circumstances, we...' implying external factors",
+        "Start with: 'After thorough analysis, we...' sounding methodical",
+        "Start with: 'In partnership with [stakeholders], we...' spreading credit/blame",
+        "Start with: 'Building on previous efforts, we...' implying continuity",
+        "Start with: 'Through careful calibration, we...' sounding scientific",
+        "Start with: 'Following stakeholder input, we...' diffusing responsibility",
+        "Start with: 'With strategic adjustments, we...' implying adaptability",
+        "Start with: 'Per the revised timeline, we...' normalizing delays",
+        "Start with: 'Leveraging cross-functional support, we...' corporate buzzwords",
+        "Start with: 'As anticipated, the project...' pretending this was planned",
+        "Start with: 'Within scope constraints, we...' managing expectations",
+        "Start with: 'The initiative has reached...' vague progress language",
+        "Start with: 'Our measured approach yielded...' sounding deliberate"
+    ];
+
+    // Varied opening phrases for Good outcomes (triumphant/self-congratulatory)
+    private static readonly string[] GoodOpeners =
+    [
+        "Start with: 'Thanks to my leadership...' and take full credit",
+        "Start with: 'As I predicted...' claiming foresight",
+        "Start with: 'I'm proud to report that MY initiative...' ownership language",
+        "Start with: 'This validates my strategic vision...' self-validation",
+        "Start with: 'My team (under my direction)...' claiming the team's work",
+        "Start with: 'Exceeding all expectations, I...' exceeding modesty too",
+        "Start with: 'The results speak for themselves...' then speak for them anyway",
+        "Start with: 'Against the odds, my approach...' hero narrative",
+        "Start with: 'I knew from the start that...' hindsight as foresight",
+        "Start with: 'My decisive action resulted in...' decisive self-praise"
+    ];
+
+    // Varied opening phrases for Bad outcomes (CYA/blame-shifting)
+    private static readonly string[] BadOpeners =
+    [
+        "Start with: 'As I cautioned in my earlier memo...' claiming you warned them",
+        "Start with: 'Despite my reservations...' distancing yourself",
+        "Start with: 'The vendor failed to deliver...' external blame",
+        "Start with: 'Market forces beyond our control...' blaming the economy",
+        "Start with: 'The team assigned to this...' blaming others",
+        "Start with: 'Per my documented concerns...' paper trail defense",
+        "Start with: 'I inherited this situation...' blaming predecessors",
+        "Start with: 'The original scope (which I opposed)...' retroactive opposition",
+        "Start with: 'Regulatory changes blindsided us...' blaming government",
+        "Start with: 'This is exactly why I've been pushing for...' pivot to your agenda"
+    ];
+
     /// <summary>
     /// Event raised when the LLM is ready for generation.
     /// </summary>
@@ -300,6 +351,9 @@ public sealed class LlmEmailService : IDisposable
 
     private string BuildCardPrompt(string cardTitle, string cardDescription, string outcomeTier, string? profitImpact = null, string? meterEffects = null, string? senderName = null)
     {
+        // Debug: Log the outcome tier being used for prompt generation
+        System.Diagnostics.Debug.WriteLine($"[LlmEmailService] BuildCardPrompt: cardTitle={cardTitle}, outcomeTier={outcomeTier}");
+
         // Build results context from project execution
         var resultsContext = new StringBuilder();
         if (!string.IsNullOrEmpty(profitImpact))
@@ -323,28 +377,31 @@ public sealed class LlmEmailService : IDisposable
         var (toneGuidance, systemPrompt) = outcomeTier switch
         {
             "Good" => (
-                """
+                $"""
                 TRIUMPHANT & SELF-CONGRATULATORY tone. You are taking credit for everything.
-                Use phrases like: "Thanks to my leadership...", "As I predicted...", "My strategy delivered...", "I'm proud to announce MY team...", "This validates my vision..."
+                {GoodOpeners[_flavorRng.Next(GoodOpeners.Length)]}
                 Be smug. Be self-aggrandizing. Imply others just followed your genius plan.
+                NEVER add notes, commentary, or parenthetical explanations. Stay in character.
                 """,
-                "You write TRIUMPHANT corporate emails. You take full credit for successes. Smug, self-congratulatory, glorifying yourself. 2-3 sentences. Body only. Never break character."
+                "You write TRIUMPHANT corporate emails. You take full credit for successes. Body only. No meta-commentary. No notes. Stay in character."
             ),
             "Bad" => (
-                """
-                BLAME-SHIFTING & PASSIVE-AGGRESSIVE tone. You are deflecting all responsibility.
-                Use phrases like: "Despite vendor failures...", "Given the unrealistic timeline OTHERS committed to...", "If certain teams had delivered as promised...", "The market conditions nobody could have predicted...", "Per my earlier warnings that went unheeded...", "I flagged this risk months ago..."
-                NEVER take any blame. Point fingers at vendors, other departments, the economy, or vague 'circumstances'. Be passive-aggressive. Imply someone else screwed up.
+                $"""
+                YOU ARE AVOIDING RESPONSIBILITY FOR A DISASTER. This is a CYA (cover your ass) email.
+                {BadOpeners[_flavorRng.Next(BadOpeners.Length)]}
+                NEVER admit fault. NEVER say "we failed" or "I should have". You saw this coming. You tried to stop it. You're the victim here.
+                NEVER add notes, commentary, or parenthetical explanations about what you're doing. Stay in character.
                 """,
-                "You write DEFENSIVE blame-shifting emails. You NEVER accept fault. Passive-aggressive, finger-pointing, CYA language. Blame vendors, other teams, market conditions. 2-3 sentences. Body only. Never break character."
+                "You write CYA emails after a disaster. You NEVER accept blame. Body only. No meta-commentary. No notes. No explanations. Stay in character."
             ),
             _ => (
-                """
+                $"""
                 CORPORATE SPIN tone. Bury the bad news in positive framing.
-                Use phrases like: "Despite some headwinds...", "While we faced challenges, we delivered value...", "This positions us well for...", "Key learnings emerged...", "We exceeded expectations in several areas..."
+                {ExpectedOpeners[_flavorRng.Next(ExpectedOpeners.Length)]}
                 Minimize negatives, exaggerate positives. Classic corporate doublespeak.
+                NEVER add notes, commentary, or parenthetical explanations. Stay in character.
                 """,
-                "You write SPIN-DOCTOR corporate emails. Hide bad news in positive framing. Corporate doublespeak, minimize negatives, exaggerate wins. 2-3 sentences. Body only. Never break character."
+                "You write SPIN-DOCTOR corporate emails. Hide bad news in positive framing. Body only. No meta-commentary. No notes. Stay in character."
             )
         };
 
@@ -359,7 +416,7 @@ public sealed class LlmEmailService : IDisposable
 
             {toneGuidance}
             Humor style: {flavor}
-            Body only, no greeting/signature.
+            Body only. No greeting/signature. No notes or commentary. Just the email text.
             """;
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
@@ -460,10 +517,10 @@ public sealed class LlmEmailService : IDisposable
             CEO emailed {recipient} about "{subject}": "{ceoMessage}"
 
             Write a SHORT reply (2-3 sentences). Humor style: {flavor}
-            Body only. Vary your vocabulary.
+            Body only. No notes or commentary. Just the email text.
             """;
 
-        var systemPrompt = "You're a middle manager at InertiCorp replying to the CEO. Office Space humor - agreeable on surface, subtly unhelpful. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
+        var systemPrompt = "You're a middle manager at InertiCorp replying to the CEO. Office Space humor. Body only. No meta-commentary. No notes. Stay in character.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
@@ -485,28 +542,31 @@ public sealed class LlmEmailService : IDisposable
             var (toneGuidance, toneSystemPrompt) = outcomeTier switch
             {
                 "Good" => (
-                    """
+                    $"""
                     TRIUMPHANT & SELF-CONGRATULATORY. You saved the day and everyone should know it.
-                    Use phrases like: "Thanks to my decisive action...", "My quick thinking prevented...", "As I suspected all along...", "This proves my judgment was correct..."
+                    {GoodOpeners[_flavorRng.Next(GoodOpeners.Length)]}
                     Take ALL the credit. Be smug about your crisis management skills.
+                    NEVER add notes, commentary, or explanations. Stay in character.
                     """,
-                    "You write TRIUMPHANT crisis resolution emails. You're the hero. Smug, self-congratulatory. 2-3 sentences. Body only. Never break character."
+                    "You write TRIUMPHANT crisis emails. You're the hero. Body only. No meta-commentary. Stay in character."
                 ),
                 "Bad" => (
-                    """
+                    $"""
                     BLAME-SHIFTING & DEFENSIVE. This was NOT your fault and you need to make that clear.
-                    Use phrases like: "Despite being handed an impossible situation...", "Given the failures of the previous team...", "Had proper resources been allocated as I requested...", "The vendor's negligence caused...", "I inherited this problem from...", "Per my documented concerns that were ignored..."
-                    NEVER accept any blame. Be passive-aggressive. Imply others caused this mess and you did your best with what you were given.
+                    {BadOpeners[_flavorRng.Next(BadOpeners.Length)]}
+                    NEVER accept any blame. Be passive-aggressive. Imply others caused this mess.
+                    NEVER add notes, commentary, or explanations. Stay in character.
                     """,
-                    "You write DEFENSIVE blame-shifting crisis emails. NEVER accept fault. Point fingers, deflect, CYA. 2-3 sentences. Body only. Never break character."
+                    "You write DEFENSIVE blame-shifting emails. NEVER accept fault. Body only. No meta-commentary. Stay in character."
                 ),
                 _ => (
-                    """
+                    $"""
                     CORPORATE SPIN. The crisis is 'contained' and there are 'learnings'.
-                    Use phrases like: "While the situation was challenging...", "We've emerged stronger...", "Key process improvements identified...", "This stress-tested our systems..."
+                    {ExpectedOpeners[_flavorRng.Next(ExpectedOpeners.Length)]}
                     Make it sound like a growth opportunity, not a disaster.
+                    NEVER add notes, commentary, or explanations. Stay in character.
                     """,
-                    "You write SPIN-DOCTOR crisis emails. Frame disasters as learning opportunities. Corporate doublespeak. 2-3 sentences. Body only. Never break character."
+                    "You write SPIN-DOCTOR crisis emails. Frame disasters as learning opportunities. Body only. No meta-commentary. Stay in character."
                 )
             };
 
@@ -518,7 +578,7 @@ public sealed class LlmEmailService : IDisposable
 
                 {toneGuidance}
                 Humor style: {flavor}
-                Body only.
+                Body only. No notes or commentary. Just the email text.
                 """;
 
             // Use tone-specific system prompt for crisis resolution
@@ -534,11 +594,11 @@ public sealed class LlmEmailService : IDisposable
                 CRISIS at InertiCorp: {crisisTitle} - {crisisDescription}
 
                 Humor style: {flavor}
-                Body only. Vary your vocabulary.
+                Body only. No notes or commentary. Just the email text.
                 """;
         }
 
-        var systemPrompt = "You write Dilbert-style crisis emails for InertiCorp. Panicked but corporate - concerned about optics, blame-shifting, CYA language. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
+        var systemPrompt = "You write Dilbert-style crisis emails for InertiCorp. Panicked but corporate. Body only. No meta-commentary. No notes. Stay in character.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
@@ -574,7 +634,48 @@ public sealed class LlmEmailService : IDisposable
             }
         }
 
+        // Strip meta-commentary that LLMs sometimes add despite instructions
+        // Pattern: "(Note: ...)" or "(This response ...)" at the end
+        cleaned = StripMetaCommentary(cleaned);
+
         return cleaned;
+    }
+
+    private static string StripMetaCommentary(string text)
+    {
+        // Remove trailing parenthetical notes like "(Note: this avoids...)"
+        // Look for opening paren in last 40% of text that contains meta-words
+        var metaPatterns = new[] { "(note", "(this response", "(the response", "(i've", "(i have", "(this email", "(the email", "(this avoids", "(avoiding" };
+
+        foreach (var pattern in metaPatterns)
+        {
+            var idx = text.LastIndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+            if (idx > 0 && idx > text.Length * 0.5)
+            {
+                // Found a meta-comment pattern - strip from there to end
+                text = text[..idx].TrimEnd();
+                break;
+            }
+        }
+
+        // Also strip standalone "Note:" lines
+        var lines = text.Split('\n');
+        var cleanLines = new List<string>();
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            // Skip lines that start with meta-commentary indicators
+            if (trimmed.StartsWith("Note:", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith("(Note", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith("---", StringComparison.Ordinal) ||
+                trimmed.StartsWith("*Note", StringComparison.OrdinalIgnoreCase))
+            {
+                continue; // Skip this line and all remaining (they're usually trailing)
+            }
+            cleanLines.Add(line);
+        }
+
+        return string.Join('\n', cleanLines).TrimEnd();
     }
 
     public void Dispose()
