@@ -20,27 +20,8 @@ public static class LlmDiagnostics
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool SetDefaultDllDirectories(uint directoryFlags);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern IntPtr LoadLibraryEx(string lpLibFileName, IntPtr hFile, uint dwFlags);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint GetLastError();
-
-    // llama.cpp backend loading - these are in ggml.dll, not llama.dll!
-    // Suppress CA5392/CA5393 - we need to load from where our native libs are
-#pragma warning disable CA5392, CA5393
-    [DllImport("ggml.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "ggml_backend_load_all")]
-    private static extern void ggml_backend_load_all();
-
-    [DllImport("ggml.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "ggml_backend_load_all_from_path", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-    private static extern void ggml_backend_load_all_from_path([MarshalAs(UnmanagedType.LPStr)] string path);
-#pragma warning restore CA5392, CA5393
-
     private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
     private const uint LOAD_LIBRARY_SEARCH_USER_DIRS = 0x00000400;
-    private const uint LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008;
 
     private static readonly StringBuilder _logBuffer = new();
     private static readonly object _lock = new();
@@ -215,32 +196,6 @@ public static class LlmDiagnostics
                 // Add base directory (also contains CUDA runtime DLLs)
                 var baseResult = AddDllDirectory(baseDir);
                 Log($"[LlmDiagnostics] AddDllDirectory(base): {(baseResult != IntPtr.Zero ? "success" : "failed")}");
-
-                // Pre-load ALL backend DLLs so they're available when llama.dll loads
-                var backendDlls = new[] { "ggml-cpu.dll", "ggml-cuda.dll" };
-                foreach (var dll in backendDlls)
-                {
-                    var dllPath = Path.Combine(cuda12Path, dll);
-                    if (File.Exists(dllPath))
-                    {
-                        Log($"[LlmDiagnostics] Pre-loading {dll}...");
-                        var handle = LoadLibraryEx(dllPath, IntPtr.Zero, LOAD_WITH_ALTERED_SEARCH_PATH);
-                        if (handle != IntPtr.Zero)
-                        {
-                            Log($"[LlmDiagnostics] {dll} pre-loaded successfully!");
-                            if (dll.Contains("cuda")) GpuDetected = true;
-                        }
-                        else
-                        {
-                            var error = GetLastError();
-                            Log($"[LlmDiagnostics] {dll} FAILED to load! Error code: {error}");
-                        }
-                    }
-                    else
-                    {
-                        Log($"[LlmDiagnostics] {dll} not found at: {dllPath}");
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -248,8 +203,13 @@ public static class LlmDiagnostics
             }
         }
 
-        // Set backend path environment variable
-        // This tells llama.cpp where to find backend plugins (ggml-cuda.dll, ggml-cpu.dll)
+        // CUDA12 runtimes folder is the canonical location for native libs
+        // Do NOT put DLLs in base directory - use the NuGet package structure
+        var llamaCudaPath = Path.Combine(cuda12Path, "llama.dll");
+        Log($"[LlmDiagnostics] llama.dll in cuda12: {File.Exists(llamaCudaPath)}");
+
+        // Set backend path to cuda12 directory where ggml-cuda.dll lives
+        // This tells llama.cpp where to find backend plugins
         if (Directory.Exists(cuda12Path))
         {
             Environment.SetEnvironmentVariable("GGML_BACKEND_DIR", cuda12Path);
@@ -257,16 +217,8 @@ public static class LlmDiagnostics
             Log($"[LlmDiagnostics] Set GGML_BACKEND_DIR={cuda12Path}");
         }
 
-        // Also check base directory for native libs (Godot exports put them there)
-        var baseLlamaPath = Path.Combine(baseDir, "llama.dll");
-        var baseGgmlCudaPath = Path.Combine(baseDir, "ggml-cuda.dll");
-        Log($"[LlmDiagnostics] Base llama.dll exists: {File.Exists(baseLlamaPath)}");
-        Log($"[LlmDiagnostics] Base ggml-cuda.dll exists: {File.Exists(baseGgmlCudaPath)}");
-
-        // Configure LLamaSharp - check multiple paths for llama.dll
-        var llamaCudaPath = Path.Combine(cuda12Path, "llama.dll");
-        var llamaPath = File.Exists(llamaCudaPath) ? llamaCudaPath :
-                        File.Exists(baseLlamaPath) ? baseLlamaPath : null;
+        // Configure LLamaSharp with the cuda12 runtime path
+        var llamaPath = File.Exists(llamaCudaPath) ? llamaCudaPath : null;
 
         if (llamaPath != null)
         {
@@ -275,7 +227,7 @@ public static class LlmDiagnostics
             // Configure with explicit library path, CUDA enabled, AND auto-fallback for CPU ops
             NativeLibraryConfig.LLama
                 .WithLibrary(llamaPath)
-                .WithSearchDirectories([cuda12Path, baseDir])  // Search both locations for backends
+                .WithSearchDirectories([cuda12Path])  // Only use cuda12 runtime folder
                 .WithCuda()  // Enable CUDA backend loading
                 .WithAutoFallback()  // CRITICAL: Enables CPU backend for mixed operations
                 .WithLogCallback(OnNativeLog);
@@ -284,7 +236,7 @@ public static class LlmDiagnostics
         {
             Log("[LlmDiagnostics] Configuring with CUDA12 search path");
             NativeLibraryConfig.LLama
-                .WithSearchDirectories([cuda12Path, baseDir])
+                .WithSearchDirectories([cuda12Path])
                 .WithCuda()
                 .WithAutoFallback()
                 .WithLogCallback(OnNativeLog);
@@ -300,58 +252,9 @@ public static class LlmDiagnostics
 
         Log("[LlmDiagnostics] Configuration complete");
 
-        // Try to trigger native library loading immediately to see any errors
-        try
-        {
-            Log("[LlmDiagnostics] Triggering native library load...");
-            // This will force the native library to load
-            var version = NativeApi.llama_max_devices();
-            Log($"[LlmDiagnostics] Native library loaded, max devices: {version}");
-
-            // Now load backends - this is required for newer llama.cpp versions
-            // Need to load from multiple paths: cuda12 for GPU, avx2 for CPU
-            try
-            {
-                // Load CUDA backend
-                Log($"[LlmDiagnostics] Loading backends from: {cuda12Path}");
-                ggml_backend_load_all_from_path(cuda12Path);
-                Log("[LlmDiagnostics] ggml_backend_load_all_from_path(cuda12) succeeded!");
-
-                // Also load CPU backend from avx2 directory
-                var avx2Path = Path.Combine(baseDir, "runtimes", "win-x64", "native", "avx2");
-                if (Directory.Exists(avx2Path))
-                {
-                    Log($"[LlmDiagnostics] Loading CPU backend from: {avx2Path}");
-                    ggml_backend_load_all_from_path(avx2Path);
-                    Log("[LlmDiagnostics] ggml_backend_load_all_from_path(avx2) succeeded!");
-                }
-                else
-                {
-                    Log($"[LlmDiagnostics] avx2 path not found: {avx2Path}");
-                }
-            }
-            catch (EntryPointNotFoundException)
-            {
-                Log("[LlmDiagnostics] ggml_backend_load_all_from_path not found, trying ggml_backend_load_all...");
-                try
-                {
-                    ggml_backend_load_all();
-                    Log("[LlmDiagnostics] ggml_backend_load_all succeeded!");
-                }
-                catch (EntryPointNotFoundException)
-                {
-                    Log("[LlmDiagnostics] Backend loading functions not available in this llama.cpp version");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log($"[LlmDiagnostics] Native library load FAILED: {ex.GetType().Name}: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                Log($"[LlmDiagnostics] Inner: {ex.InnerException.Message}");
-            }
-        }
+        // Let LLamaSharp handle native library loading - don't interfere with P/Invoke
+        // The native library will be loaded when the model is first accessed
+        Log("[LlmDiagnostics] Setup complete - native library will load on first model access");
     }
 
     private static void OnNativeLog(LLamaLogLevel level, string message)
@@ -470,4 +373,5 @@ public static class LlmDiagnostics
         }
         Log($"  Stack: {ex.StackTrace}");
     }
+
 }

@@ -319,6 +319,35 @@ public sealed class LlmEmailService : IDisposable
             ? $"You are {senderName} writing to the CEO."
             : "You are a middle manager writing to the CEO.";
 
+        // Tone guidance with example phrases - helps small LLMs understand the style
+        var (toneGuidance, systemPrompt) = outcomeTier switch
+        {
+            "Good" => (
+                """
+                TRIUMPHANT & SELF-CONGRATULATORY tone. You are taking credit for everything.
+                Use phrases like: "Thanks to my leadership...", "As I predicted...", "My strategy delivered...", "I'm proud to announce MY team...", "This validates my vision..."
+                Be smug. Be self-aggrandizing. Imply others just followed your genius plan.
+                """,
+                "You write TRIUMPHANT corporate emails. You take full credit for successes. Smug, self-congratulatory, glorifying yourself. 2-3 sentences. Body only. Never break character."
+            ),
+            "Bad" => (
+                """
+                BLAME-SHIFTING & PASSIVE-AGGRESSIVE tone. You are deflecting all responsibility.
+                Use phrases like: "Despite vendor failures...", "Given the unrealistic timeline OTHERS committed to...", "If certain teams had delivered as promised...", "The market conditions nobody could have predicted...", "Per my earlier warnings that went unheeded...", "I flagged this risk months ago..."
+                NEVER take any blame. Point fingers at vendors, other departments, the economy, or vague 'circumstances'. Be passive-aggressive. Imply someone else screwed up.
+                """,
+                "You write DEFENSIVE blame-shifting emails. You NEVER accept fault. Passive-aggressive, finger-pointing, CYA language. Blame vendors, other teams, market conditions. 2-3 sentences. Body only. Never break character."
+            ),
+            _ => (
+                """
+                CORPORATE SPIN tone. Bury the bad news in positive framing.
+                Use phrases like: "Despite some headwinds...", "While we faced challenges, we delivered value...", "This positions us well for...", "Key learnings emerged...", "We exceeded expectations in several areas..."
+                Minimize negatives, exaggerate positives. Classic corporate doublespeak.
+                """,
+                "You write SPIN-DOCTOR corporate emails. Hide bad news in positive framing. Corporate doublespeak, minimize negatives, exaggerate wins. 2-3 sentences. Body only. Never break character."
+            )
+        };
+
         // Concise prompt for faster generation - 1 paragraph
         var userPrompt = $"""
             Write a SHORT satirical corporate email (2-3 sentences, one paragraph).
@@ -328,11 +357,10 @@ public sealed class LlmEmailService : IDisposable
             Outcome: {outcomeTier}
             {(resultsContext.Length > 0 ? $"Results: {resultsContext}" : "")}
 
+            {toneGuidance}
             Humor style: {flavor}
-            Body only, no greeting/signature. Vary your vocabulary.
+            Body only, no greeting/signature.
             """;
-
-        var systemPrompt = "You write Dilbert-style corporate satire for InertiCorp. Dry wit, passive-aggressive, absurd but believable. 2-3 sentences. Body only. No placeholders like [NAME] - write complete text. NEVER break character or add disclaimers.";
 
         return string.Format(_activeModelInfo!.PromptFormat, userPrompt, systemPrompt);
     }
@@ -454,22 +482,48 @@ public sealed class LlmEmailService : IDisposable
         if (isResolution)
         {
             var effectsLine = !string.IsNullOrEmpty(effects) ? $" Result: {effects}" : "";
-            var outcomeDesc = outcomeTier switch
+            var (toneGuidance, toneSystemPrompt) = outcomeTier switch
             {
-                "Good" => "success (spin it positively)",
-                "Bad" => "problems (minimize and deflect)",
-                _ => "mixed results (claim victory anyway)"
+                "Good" => (
+                    """
+                    TRIUMPHANT & SELF-CONGRATULATORY. You saved the day and everyone should know it.
+                    Use phrases like: "Thanks to my decisive action...", "My quick thinking prevented...", "As I suspected all along...", "This proves my judgment was correct..."
+                    Take ALL the credit. Be smug about your crisis management skills.
+                    """,
+                    "You write TRIUMPHANT crisis resolution emails. You're the hero. Smug, self-congratulatory. 2-3 sentences. Body only. Never break character."
+                ),
+                "Bad" => (
+                    """
+                    BLAME-SHIFTING & DEFENSIVE. This was NOT your fault and you need to make that clear.
+                    Use phrases like: "Despite being handed an impossible situation...", "Given the failures of the previous team...", "Had proper resources been allocated as I requested...", "The vendor's negligence caused...", "I inherited this problem from...", "Per my documented concerns that were ignored..."
+                    NEVER accept any blame. Be passive-aggressive. Imply others caused this mess and you did your best with what you were given.
+                    """,
+                    "You write DEFENSIVE blame-shifting crisis emails. NEVER accept fault. Point fingers, deflect, CYA. 2-3 sentences. Body only. Never break character."
+                ),
+                _ => (
+                    """
+                    CORPORATE SPIN. The crisis is 'contained' and there are 'learnings'.
+                    Use phrases like: "While the situation was challenging...", "We've emerged stronger...", "Key process improvements identified...", "This stress-tested our systems..."
+                    Make it sound like a growth opportunity, not a disaster.
+                    """,
+                    "You write SPIN-DOCTOR crisis emails. Frame disasters as learning opportunities. Corporate doublespeak. 2-3 sentences. Body only. Never break character."
+                )
             };
 
             userPrompt = $"""
                 Write a SHORT satirical email (2-3 sentences).
 
                 {senderContext}
-                Crisis "{crisisTitle}" resolved via "{choiceLabel ?? "action"}". Outcome: {outcomeDesc}.{effectsLine}
+                Crisis "{crisisTitle}" resolved via "{choiceLabel ?? "action"}".{effectsLine}
 
+                {toneGuidance}
                 Humor style: {flavor}
-                Body only. Vary your vocabulary.
+                Body only.
                 """;
+
+            // Use tone-specific system prompt for crisis resolution
+            var crisisSystemPrompt = toneSystemPrompt;
+            return string.Format(_activeModelInfo!.PromptFormat, userPrompt, crisisSystemPrompt);
         }
         else
         {

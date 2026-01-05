@@ -269,6 +269,31 @@ public partial class GameManager : Node
         LastLog = log;
         Phase = UIPhase.PlayingCards; // Now goes to PlayCards first
 
+        // If a crisis was drawn during BoardDemand, create the inbox thread for it
+        if (CurrentState.CurrentCrisis is not null)
+        {
+            var crisisCard = CurrentState.CurrentCrisis;
+            GD.Print($"[GameManager] Crisis drawn during BoardDemand: {crisisCard.Title}");
+
+            // Generate the crisis email
+            var emailGen = new Core.Email.EmailGenerator(_rng.NextInt(0, int.MaxValue));
+            var crisisThread = emailGen.CreateCrisisThread(
+                crisisCard,
+                CurrentState.Quarter.QuarterNumber,
+                CurrentState.Org.Alignment,
+                CurrentState.CEO.BoardPressureLevel,
+                CurrentState.CEO.EvilScore);
+
+            // Set OriginatingCardId so NavigateToUnresolvedCrisis can find this thread
+            crisisThread = crisisThread with { OriginatingCardId = crisisCard.EventId };
+
+            var newInbox = CurrentState.Inbox.WithThreadAdded(crisisThread);
+            CurrentState = CurrentState.WithInbox(newInbox);
+
+            // Trigger async AI generation to update the email content
+            TriggerCrisisAiGeneration(crisisThread.ThreadId, crisisCard.Title, crisisCard.Description, isResolution: false);
+        }
+
         LogPhase(log);
         EmitSignal(SignalName.StateChanged);
         EmitSignal(SignalName.PhaseChanged);

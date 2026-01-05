@@ -154,75 +154,89 @@ jobs:
           Get-ChildItem $dataDir -File | Select-Object -First 10 Name
         shell: pwsh
 
-      - name: Setup cuda12 directory with NuGet CUDA DLLs
+      - name: Setup complete runtimes folder structure
         run: |
           $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
-          $cuda12Dir = "$dataDir\runtimes\win-x64\native\cuda12"
-          $avx2Dir = "$dataDir\runtimes\win-x64\native\avx2"
+          $runtimesDir = "$dataDir\runtimes\win-x64\native"
 
-          # Ensure cuda12 directory exists
-          New-Item -ItemType Directory -Force -Path $cuda12Dir
+          # CRITICAL: Copy the COMPLETE runtimes folder from NuGet packages
+          # This includes avx, avx2, avx512, noavx (CPU backends) AND cuda12 (GPU backend)
+          # LLamaSharp needs all of these for proper backend discovery
 
-          # The NuGet LLamaSharp.Backend.Cuda12 package provides CUDA-compatible native DLLs
-          # These are already in the data directory from dotnet publish/export
-          # We need to MOVE them from data root to cuda12 subdirectory (like dev environment)
-          $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll")
-          foreach ($dll in $nativeDlls) {
-            $dataRootDll = "$dataDir\$dll"
-            if (Test-Path $dataRootDll) {
-              # Move to cuda12 (not copy - we want them ONLY in cuda12)
-              Move-Item $dataRootDll $cuda12Dir -Force
-              $size = (Get-Item "$cuda12Dir\$dll").Length
-              Write-Host "Moved $dll ($([math]::Round($size / 1MB, 1)) MB) from data root to cuda12"
-            } else {
-              Write-Host "Note: $dll not in data root"
-            }
+          # Remove any existing partial runtimes folder
+          if (Test-Path "$dataDir\runtimes") {
+            Remove-Item "$dataDir\runtimes" -Recurse -Force
           }
 
-          # CRITICAL: The NuGet CUDA12 package's ggml-cpu.dll is a stub (505KB)
-          # We need the FULL ggml-cpu.dll from avx2 (626KB) for CPU backend support
-          # Without this, model loading fails with "no CPU backend found"
-          # First try the data directory, then fall back to NuGet cache
-          $avx2Cpu = "$avx2Dir\ggml-cpu.dll"
-          if (Test-Path $avx2Cpu) {
-            Copy-Item $avx2Cpu "$cuda12Dir\ggml-cpu.dll" -Force
-            $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-            Write-Host "Replaced ggml-cpu.dll with avx2 version from data dir ($([math]::Round($size / 1KB, 0)) KB)"
+          # Copy complete runtimes from NuGet packages
+          $nugetRuntimesBase = "$env:USERPROFILE\.nuget\packages"
+
+          # Get CPU backend runtimes (avx, avx2, avx512, noavx)
+          $cpuRuntimes = "$nugetRuntimesBase\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native"
+          if (Test-Path $cpuRuntimes) {
+            New-Item -ItemType Directory -Force -Path $runtimesDir
+            Copy-Item "$cpuRuntimes\*" $runtimesDir -Recurse -Force
+            Write-Host "Copied CPU runtimes (avx, avx2, avx512, noavx) from NuGet"
           } else {
-            # Get from NuGet cache (LLamaSharp.Backend.Cpu package)
-            $nugetCache = "$env:USERPROFILE\.nuget\packages\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2\ggml-cpu.dll"
-            if (Test-Path $nugetCache) {
-              Copy-Item $nugetCache "$cuda12Dir\ggml-cpu.dll" -Force
-              $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-              Write-Host "Replaced ggml-cpu.dll with avx2 version from NuGet cache ($([math]::Round($size / 1KB, 0)) KB)"
-            } else {
-              Write-Host "ERROR: avx2/ggml-cpu.dll not found in data dir or NuGet cache!"
-              Write-Host "Checked: $avx2Cpu"
-              Write-Host "Checked: $nugetCache"
-            }
+            Write-Host "ERROR: CPU runtimes not found at $cpuRuntimes"
           }
 
-          # Copy cuBLAS DLLs from the downloaded package (NuGet doesn't include these)
+          # Get CUDA12 backend runtimes
+          $cudaRuntimes = "$nugetRuntimesBase\llamasharp.backend.cuda12\0.25.0\runtimes\win-x64\native\cuda12"
+          if (Test-Path $cudaRuntimes) {
+            New-Item -ItemType Directory -Force -Path "$runtimesDir\cuda12"
+            Copy-Item "$cudaRuntimes\*" "$runtimesDir\cuda12" -Recurse -Force
+            Write-Host "Copied CUDA12 runtimes from NuGet"
+          } else {
+            Write-Host "ERROR: CUDA12 runtimes not found at $cudaRuntimes"
+          }
+
+          # Add cuBLAS DLLs to cuda12 folder (NuGet doesn't include these)
           $sourceDir = "src/InertiCorp.Core/native/cuda12"
           $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
           foreach ($dll in $cublasDlls) {
             $srcPath = "$sourceDir\$dll"
             if (Test-Path $srcPath) {
-              Copy-Item $srcPath $cuda12Dir -Force
+              Copy-Item $srcPath "$runtimesDir\cuda12" -Force
               Write-Host "Copied $dll to cuda12"
             } else {
               Write-Host "Warning: $dll not found in source directory"
             }
           }
 
-          Write-Host ""
-          Write-Host "cuda12 directory contents:"
-          Get-ChildItem $cuda12Dir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+          # Also copy cuBLAS to data root (some DLL loaders look there first)
+          foreach ($dll in $cublasDlls) {
+            $srcPath = "$sourceDir\$dll"
+            if (Test-Path $srcPath) {
+              Copy-Item $srcPath $dataDir -Force
+              Write-Host "Copied $dll to data root"
+            }
+          }
+
+          # Remove any native DLLs from data root (they should ONLY be in runtimes)
+          $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll", "mtmd.dll")
+          foreach ($dll in $nativeDlls) {
+            $dllPath = "$dataDir\$dll"
+            if (Test-Path $dllPath) {
+              Remove-Item $dllPath -Force
+              Write-Host "Removed $dll from data root (belongs in runtimes only)"
+            }
+          }
 
           Write-Host ""
-          Write-Host "Data root native DLLs (should be empty):"
-          Get-ChildItem $dataDir -Filter "ggml*.dll" | ForEach-Object { Write-Host "  WARNING: $($_.Name) still in data root!" }
-          Get-ChildItem $dataDir -Filter "llama.dll" | ForEach-Object { Write-Host "  WARNING: $($_.Name) still in data root!" }
+          Write-Host "=== Runtimes folder structure ==="
+          Get-ChildItem $runtimesDir -Directory | ForEach-Object {
+            Write-Host "  $($_.Name):"
+            Get-ChildItem $_.FullName -Filter "*.dll" | ForEach-Object {
+              Write-Host "    $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)"
+            }
+          }
+
+          Write-Host ""
+          Write-Host "=== Data root DLLs ==="
+          Get-ChildItem $dataDir -Filter "*.dll" | Where-Object { $_.Name -match "cuda|cublas|ggml|llama" } | ForEach-Object {
+            Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)"
+          }
         shell: pwsh
 
       - name: List build directory
