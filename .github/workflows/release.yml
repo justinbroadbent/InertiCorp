@@ -156,73 +156,102 @@ jobs:
 
       - name: Setup cuda12 directory with NuGet CUDA DLLs
         run: |
+          $ErrorActionPreference = "Stop"
           $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
           $cuda12Dir = "$dataDir\runtimes\win-x64\native\cuda12"
           $avx2Dir = "$dataDir\runtimes\win-x64\native\avx2"
 
           # Ensure cuda12 directory exists
-          New-Item -ItemType Directory -Force -Path $cuda12Dir
+          New-Item -ItemType Directory -Force -Path $cuda12Dir | Out-Null
 
-          # The NuGet LLamaSharp.Backend.Cuda12 package provides CUDA-compatible native DLLs
-          # These are already in the data directory from dotnet publish/export
-          # We need to MOVE them from data root to cuda12 subdirectory (like dev environment)
+          # Move native DLLs from data root to cuda12 subdirectory
           $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll")
           foreach ($dll in $nativeDlls) {
             $dataRootDll = "$dataDir\$dll"
             if (Test-Path $dataRootDll) {
-              # Move to cuda12 (not copy - we want them ONLY in cuda12)
               Move-Item $dataRootDll $cuda12Dir -Force
               $size = (Get-Item "$cuda12Dir\$dll").Length
-              Write-Host "Moved $dll ($([math]::Round($size / 1MB, 1)) MB) from data root to cuda12"
-            } else {
-              Write-Host "Note: $dll not in data root"
+              Write-Host "Moved $dll ($([math]::Round($size / 1MB, 1)) MB) to cuda12"
             }
           }
 
-          # CRITICAL: The NuGet CUDA12 package's ggml-cpu.dll is a stub (505KB)
-          # We need the FULL ggml-cpu.dll from avx2 (626KB) for CPU backend support
-          # Without this, model loading fails with "no CPU backend found"
-          # First try the data directory, then fall back to NuGet cache
+          # CRITICAL: ggml.dll depends on ggml-cpu.dll even in CUDA mode
+          # Copy the FULL ggml-cpu.dll from avx2 (626KB) - CUDA package has stub version
           $avx2Cpu = "$avx2Dir\ggml-cpu.dll"
+          $nugetCache = "$env:USERPROFILE\.nuget\packages\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2\ggml-cpu.dll"
+
           if (Test-Path $avx2Cpu) {
             Copy-Item $avx2Cpu "$cuda12Dir\ggml-cpu.dll" -Force
             $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-            Write-Host "Replaced ggml-cpu.dll with avx2 version from data dir ($([math]::Round($size / 1KB, 0)) KB)"
+            Write-Host "Copied ggml-cpu.dll from avx2 ($([math]::Round($size / 1KB, 0)) KB)"
+          } elseif (Test-Path $nugetCache) {
+            Copy-Item $nugetCache "$cuda12Dir\ggml-cpu.dll" -Force
+            $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
+            Write-Host "Copied ggml-cpu.dll from NuGet cache ($([math]::Round($size / 1KB, 0)) KB)"
           } else {
-            # Get from NuGet cache (LLamaSharp.Backend.Cpu package)
-            $nugetCache = "$env:USERPROFILE\.nuget\packages\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2\ggml-cpu.dll"
-            if (Test-Path $nugetCache) {
-              Copy-Item $nugetCache "$cuda12Dir\ggml-cpu.dll" -Force
-              $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-              Write-Host "Replaced ggml-cpu.dll with avx2 version from NuGet cache ($([math]::Round($size / 1KB, 0)) KB)"
-            } else {
-              Write-Host "ERROR: avx2/ggml-cpu.dll not found in data dir or NuGet cache!"
-              Write-Host "Checked: $avx2Cpu"
-              Write-Host "Checked: $nugetCache"
-            }
+            Write-Error "FATAL: ggml-cpu.dll not found! Checked: $avx2Cpu and $nugetCache"
+            exit 1
           }
 
-          # Copy cuBLAS DLLs from the downloaded package (NuGet doesn't include these)
+          # Copy cuBLAS DLLs (NuGet doesn't include these)
           $sourceDir = "src/InertiCorp.Core/native/cuda12"
           $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
           foreach ($dll in $cublasDlls) {
             $srcPath = "$sourceDir\$dll"
-            if (Test-Path $srcPath) {
-              Copy-Item $srcPath $cuda12Dir -Force
-              Write-Host "Copied $dll to cuda12"
+            if (-not (Test-Path $srcPath)) {
+              Write-Error "FATAL: $dll not found in $sourceDir"
+              exit 1
+            }
+            Copy-Item $srcPath $cuda12Dir -Force
+            Write-Host "Copied $dll to cuda12"
+          }
+
+          Write-Host "`ncuda12 directory contents:"
+          Get-ChildItem $cuda12Dir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+        shell: pwsh
+
+      - name: Verify all required DLLs are present
+        run: |
+          $ErrorActionPreference = "Stop"
+          $cuda12Dir = "build\data_InertiCorp.Game_windows_x86_64\runtimes\win-x64\native\cuda12"
+
+          Write-Host "=== Verifying required DLLs ==="
+
+          # All DLLs required for LLM to work
+          $required = @(
+            @{Name="llama.dll"; MinMB=1},
+            @{Name="ggml.dll"; MinMB=0},
+            @{Name="ggml-base.dll"; MinMB=0},
+            @{Name="ggml-cpu.dll"; MinMB=0.5},
+            @{Name="ggml-cuda.dll"; MinMB=100},
+            @{Name="cublas64_12.dll"; MinMB=50},
+            @{Name="cublasLt64_12.dll"; MinMB=200},
+            @{Name="cudart64_12.dll"; MinMB=0}
+          )
+
+          $failed = $false
+          foreach ($dll in $required) {
+            $path = "$cuda12Dir\$($dll.Name)"
+            if (Test-Path $path) {
+              $sizeMB = [math]::Round((Get-Item $path).Length / 1MB, 1)
+              if ($sizeMB -lt $dll.MinMB) {
+                Write-Host "[FAIL] $($dll.Name) is $sizeMB MB (expected >= $($dll.MinMB) MB)"
+                $failed = $true
+              } else {
+                Write-Host "[OK] $($dll.Name) ($sizeMB MB)"
+              }
             } else {
-              Write-Host "Warning: $dll not found in source directory"
+              Write-Host "[MISSING] $($dll.Name)"
+              $failed = $true
             }
           }
 
-          Write-Host ""
-          Write-Host "cuda12 directory contents:"
-          Get-ChildItem $cuda12Dir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+          if ($failed) {
+            Write-Error "BUILD FAILED: Missing or undersized DLLs detected"
+            exit 1
+          }
 
-          Write-Host ""
-          Write-Host "Data root native DLLs (should be empty):"
-          Get-ChildItem $dataDir -Filter "ggml*.dll" | ForEach-Object { Write-Host "  WARNING: $($_.Name) still in data root!" }
-          Get-ChildItem $dataDir -Filter "llama.dll" | ForEach-Object { Write-Host "  WARNING: $($_.Name) still in data root!" }
+          Write-Host "`n=== All DLLs verified ==="
         shell: pwsh
 
       - name: List build directory

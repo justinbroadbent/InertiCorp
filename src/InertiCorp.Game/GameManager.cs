@@ -213,6 +213,14 @@ public partial class GameManager : Node
     private void OnLlmLoadFailed(System.Exception ex)
     {
         GD.PrintErr($"[GameManager] LLM load failed: {ex.Message}");
+        // Log full exception chain to help debug native DLL loading issues
+        var inner = ex.InnerException;
+        while (inner != null)
+        {
+            GD.PrintErr($"[GameManager]   Inner: {inner.GetType().Name}: {inner.Message}");
+            inner = inner.InnerException;
+        }
+        GD.PrintErr($"[GameManager] Stack trace: {ex.StackTrace}");
         _loadingScreen?.OnLoadingFailed(ex.Message);
     }
 
