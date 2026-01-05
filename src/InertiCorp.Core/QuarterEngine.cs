@@ -68,11 +68,11 @@ public static class QuarterEngine
             newState = newState.WithInbox(newInbox);
         }
 
-        // 33% chance to draw a crisis card for the upcoming phase
+        // 1 in 6 chance to draw a crisis card for the upcoming phase (standard die roll)
         EventCard? crisisCard = null;
         var newEventDecks = state.EventDecks;
-        var crisisRoll = rng.NextInt(1, 101);
-        if (crisisRoll <= 33)
+        var crisisRoll = rng.NextInt(1, 7); // Roll a d6
+        if (crisisRoll == 1)
         {
             (newEventDecks, crisisCard) = state.EventDecks.DrawCrisis(rng);
             log = log.WithEntry(LogEntry.Info("A situation is brewing..."));

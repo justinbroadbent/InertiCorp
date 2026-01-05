@@ -272,27 +272,23 @@ public partial class BackgroundEmailProcessor : Node
             GD.Print($"[BackgroundProcessor] Card {card.CardId} played, thread {thread.ThreadId} created");
         }
 
-        // Capture outcome from the log
-        var outcome = _gameManager.LastLog?.Entries
-            .FirstOrDefault(e => e.OutcomeTier != null)?.OutcomeTier;
-        activeProject.OutcomeText = outcome?.ToString() ?? "Expected";
-
-        // Extract profit impact from log entries
-        var profitEntry = _gameManager.LastLog?.Entries
-            .FirstOrDefault(e => e.Message.StartsWith("Profit impact:"));
-        if (profitEntry != null)
+        // Get stored outcome from GameManager (captured immediately when card was played, before phase changes)
+        // This fixes the race condition where LastLog gets overwritten by Crisis phase for the last card
+        var storedOutcome = _gameManager.GetStoredOutcome(card.CardId);
+        if (storedOutcome != null)
         {
-            activeProject.ProfitImpact = profitEntry.Message.Replace("Profit impact: ", "");
+            activeProject.OutcomeText = storedOutcome.Value.Outcome;
+            activeProject.ProfitImpact = storedOutcome.Value.ProfitImpact;
+            activeProject.MeterEffects = storedOutcome.Value.MeterEffects;
+            GD.Print($"[BackgroundProcessor] Using stored outcome for {card.Title}: {activeProject.OutcomeText}");
         }
-
-        // Extract meter changes from log entries
-        var meterChanges = _gameManager.LastLog?.Entries
-            .Where(e => e.Category == Core.LogCategory.MeterChange)
-            .Select(e => $"{e.Meter}: {(e.Delta >= 0 ? "+" : "")}{e.Delta}")
-            .ToList();
-        if (meterChanges?.Count > 0)
+        else
         {
-            activeProject.MeterEffects = string.Join(", ", meterChanges);
+            // Fallback to LastLog (shouldn't happen, but just in case)
+            GD.Print($"[BackgroundProcessor] WARNING: No stored outcome for {card.CardId}, falling back to LastLog");
+            var outcome = _gameManager.LastLog?.Entries
+                .FirstOrDefault(e => e.OutcomeTier != null)?.OutcomeTier;
+            activeProject.OutcomeText = outcome?.ToString() ?? "Expected";
         }
 
         GD.Print($"[BackgroundProcessor] Captured outcome: {activeProject.OutcomeText}, profit: {activeProject.ProfitImpact ?? "n/a"}");
@@ -421,6 +417,8 @@ public partial class BackgroundEmailProcessor : Node
                             senderName = thread.LatestMessage.FromDisplay;
                         }
                     }
+
+                    GD.Print($"[BackgroundProcessor] Calling LLM with outcome='{outcome}' for '{title}'");
 
                     aiBody = await Task.Run(async () =>
                         await emailService.GenerateCardEmailAsync(title, desc, outcome, profit, effects, senderName, cts.Token).ConfigureAwait(false),
