@@ -186,6 +186,7 @@ public sealed class LlmEmailService : IDisposable
         }
         catch (Exception ex)
         {
+            LlmDiagnostics.LogException("LoadModelFromPathAsync", ex);
             _model?.Dispose();
             _model = null;
             _activeModelInfo = null;

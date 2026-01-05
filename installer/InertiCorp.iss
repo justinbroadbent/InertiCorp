@@ -2,7 +2,7 @@
 ; Builds a Windows installer for InertiCorp CEO Survival Game
 
 #define MyAppName "InertiCorp"
-#define MyAppVersion "0.2.7"
+#define MyAppVersion "0.2.9"
 #define MyAppPublisher "Artificially Irreverent"
 #define MyAppURL "https://github.com/justinbroadbent/InertiCorp"
 #define MyAppExeName "InertiCorp.exe"
