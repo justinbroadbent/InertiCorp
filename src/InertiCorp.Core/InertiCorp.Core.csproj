@@ -21,9 +21,10 @@
     <!-- LLM support for dynamic email generation -->
     <PackageReference Include="LLamaSharp" Version="0.25.0" />
     <!-- CUDA12 backend for NVIDIA GPUs -->
-    <!-- NOTE: Do NOT add LLamaSharp.Backend.Cpu package - it conflicts with CUDA loading -->
-    <!-- However, ggml-cpu.dll IS required in cuda12 dir (copied via CopyCpuBackendToCuda12 target) -->
     <PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.25.0" />
+    <!-- CPU backend - needed for ggml-cpu.dll which is required alongside CUDA backend -->
+    <!-- The CopyCpuBackendToCuda12 target copies avx2/ggml-cpu.dll to cuda12 directory -->
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.25.0" />
   </ItemGroup>
 
   <!-- CUDA 12 Runtime DLLs for GPU acceleration (from llama.cpp releases) -->
