@@ -66,32 +66,39 @@ jobs:
 
       - name: Download cuBLAS DLLs
         run: |
-          # Download cuBLAS from llama.cpp release (required for GPU matrix operations)
-          # NOTE: We use NuGet LLamaSharp.Backend.Cuda12 for llama/ggml DLLs (compatible with LLamaSharp)
-          # We only need cuBLAS from llama.cpp since NuGet doesn't include it
-          $llamaCudaUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/llama-b7616-bin-win-cuda-12.4-x64.zip"
-          $llamaCudaZip = "llama-cuda.zip"
+          # Download CUDA runtime DLLs from llama.cpp release (required for GPU matrix operations)
+          # NOTE: cuBLAS is in a SEPARATE package (cudart-llama-*) from the main llama binary
+          # We use NuGet LLamaSharp.Backend.Cuda12 for llama/ggml DLLs (compatible with LLamaSharp)
+          $cudartUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b7616/cudart-llama-bin-win-cuda-12.4-x64.zip"
+          $cudartZip = "cudart.zip"
 
-          Write-Host "Downloading cuBLAS DLLs from llama.cpp..."
-          Invoke-WebRequest -Uri $llamaCudaUrl -OutFile $llamaCudaZip -TimeoutSec 600
+          Write-Host "Downloading CUDA runtime DLLs (cuBLAS) from llama.cpp..."
+          Invoke-WebRequest -Uri $cudartUrl -OutFile $cudartZip -TimeoutSec 600
 
-          $llamaCudaDir = "llama-cuda"
-          Expand-Archive -Path $llamaCudaZip -DestinationPath $llamaCudaDir -Force
+          $cudartDir = "cudart-extracted"
+          Expand-Archive -Path $cudartZip -DestinationPath $cudartDir -Force
+
+          # List what we got
+          Write-Host "Extracted contents:"
+          Get-ChildItem $cudartDir -Recurse -Filter "*.dll" | ForEach-Object { Write-Host "  $($_.FullName)" }
 
           # Create target directory for cuBLAS
           $targetDir = "src/InertiCorp.Core/native/cuda12"
           New-Item -ItemType Directory -Force -Path $targetDir
 
-          # Copy ONLY cuBLAS DLLs (NOT llama.dll/ggml*.dll - those come from NuGet)
+          # Copy cuBLAS DLLs (NOT llama.dll/ggml*.dll - those come from NuGet)
           $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
           foreach ($dll in $cublasDlls) {
-            $srcFile = Get-ChildItem $llamaCudaDir -Filter $dll -Recurse | Select-Object -First 1
+            $srcFile = Get-ChildItem $cudartDir -Filter $dll -Recurse | Select-Object -First 1
             if ($srcFile) {
               Copy-Item $srcFile.FullName $targetDir -Force
               Write-Host "Copied $dll ($([math]::Round($srcFile.Length / 1MB, 1)) MB)"
+            } else {
+              Write-Host "ERROR: $dll not found in cudart package!"
             }
           }
 
+          Write-Host ""
           Write-Host "cuBLAS DLLs ready:"
           Get-ChildItem $targetDir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
         shell: pwsh
@@ -175,13 +182,24 @@ jobs:
           # CRITICAL: The NuGet CUDA12 package's ggml-cpu.dll is a stub (505KB)
           # We need the FULL ggml-cpu.dll from avx2 (626KB) for CPU backend support
           # Without this, model loading fails with "no CPU backend found"
+          # First try the data directory, then fall back to NuGet cache
           $avx2Cpu = "$avx2Dir\ggml-cpu.dll"
           if (Test-Path $avx2Cpu) {
             Copy-Item $avx2Cpu "$cuda12Dir\ggml-cpu.dll" -Force
             $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-            Write-Host "Replaced ggml-cpu.dll with avx2 version ($([math]::Round($size / 1KB, 0)) KB)"
+            Write-Host "Replaced ggml-cpu.dll with avx2 version from data dir ($([math]::Round($size / 1KB, 0)) KB)"
           } else {
-            Write-Host "Warning: avx2/ggml-cpu.dll not found!"
+            # Get from NuGet cache (LLamaSharp.Backend.Cpu package)
+            $nugetCache = "$env:USERPROFILE\.nuget\packages\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2\ggml-cpu.dll"
+            if (Test-Path $nugetCache) {
+              Copy-Item $nugetCache "$cuda12Dir\ggml-cpu.dll" -Force
+              $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
+              Write-Host "Replaced ggml-cpu.dll with avx2 version from NuGet cache ($([math]::Round($size / 1KB, 0)) KB)"
+            } else {
+              Write-Host "ERROR: avx2/ggml-cpu.dll not found in data dir or NuGet cache!"
+              Write-Host "Checked: $avx2Cpu"
+              Write-Host "Checked: $nugetCache"
+            }
           }
 
           # Copy cuBLAS DLLs from the downloaded package (NuGet doesn't include these)
