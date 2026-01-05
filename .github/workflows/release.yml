@@ -154,46 +154,56 @@ jobs:
           Get-ChildItem $dataDir -File | Select-Object -First 10 Name
         shell: pwsh
 
-      - name: Setup cuda12 directory with NuGet CUDA DLLs
+      - name: Setup LLM native runtimes from NuGet
         run: |
           $ErrorActionPreference = "Stop"
           $dataDir = "build\data_InertiCorp.Game_windows_x86_64"
-          $cuda12Dir = "$dataDir\runtimes\win-x64\native\cuda12"
-          $avx2Dir = "$dataDir\runtimes\win-x64\native\avx2"
+          $runtimesDir = "$dataDir\runtimes\win-x64\native"
+          $nugetBase = "$env:USERPROFILE\.nuget\packages"
 
-          # Ensure cuda12 directory exists
-          New-Item -ItemType Directory -Force -Path $cuda12Dir | Out-Null
+          # Create directories
+          New-Item -ItemType Directory -Force -Path "$runtimesDir\cuda12" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$runtimesDir\avx2" | Out-Null
 
-          # Move native DLLs from data root to cuda12 subdirectory
-          $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll")
+          # Remove any DLLs that ended up in wrong places
+          $nativeDlls = @("llama.dll", "ggml.dll", "ggml-base.dll", "ggml-cpu.dll", "ggml-cuda.dll", "mtmd.dll")
           foreach ($dll in $nativeDlls) {
-            $dataRootDll = "$dataDir\$dll"
-            if (Test-Path $dataRootDll) {
-              Move-Item $dataRootDll $cuda12Dir -Force
-              $size = (Get-Item "$cuda12Dir\$dll").Length
-              Write-Host "Moved $dll ($([math]::Round($size / 1MB, 1)) MB) to cuda12"
+            $wrongPath = "$dataDir\$dll"
+            if (Test-Path $wrongPath) {
+              Remove-Item $wrongPath -Force
+              Write-Host "Removed $dll from data root"
             }
           }
 
-          # CRITICAL: ggml.dll depends on ggml-cpu.dll even in CUDA mode
-          # Copy the FULL ggml-cpu.dll from avx2 (626KB) - CUDA package has stub version
-          $avx2Cpu = "$avx2Dir\ggml-cpu.dll"
-          $nugetCache = "$env:USERPROFILE\.nuget\packages\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2\ggml-cpu.dll"
-
-          if (Test-Path $avx2Cpu) {
-            Copy-Item $avx2Cpu "$cuda12Dir\ggml-cpu.dll" -Force
-            $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-            Write-Host "Copied ggml-cpu.dll from avx2 ($([math]::Round($size / 1KB, 0)) KB)"
-          } elseif (Test-Path $nugetCache) {
-            Copy-Item $nugetCache "$cuda12Dir\ggml-cpu.dll" -Force
-            $size = (Get-Item "$cuda12Dir\ggml-cpu.dll").Length
-            Write-Host "Copied ggml-cpu.dll from NuGet cache ($([math]::Round($size / 1KB, 0)) KB)"
-          } else {
-            Write-Error "FATAL: ggml-cpu.dll not found! Checked: $avx2Cpu and $nugetCache"
+          # === COPY CPU BACKEND (avx2) FROM NUGET ===
+          $cpuSrc = "$nugetBase\llamasharp.backend.cpu\0.25.0\runtimes\win-x64\native\avx2"
+          if (-not (Test-Path $cpuSrc)) {
+            Write-Error "FATAL: CPU backend not found at $cpuSrc"
             exit 1
           }
+          Copy-Item "$cpuSrc\*" "$runtimesDir\avx2" -Force
+          Write-Host "Copied CPU backend (avx2) from NuGet"
 
-          # Copy cuBLAS DLLs (NuGet doesn't include these)
+          # === COPY CUDA BACKEND FROM NUGET ===
+          $cudaSrcPaths = @(
+            "$nugetBase\llamasharp.backend.cuda12.windows\0.25.0\runtimes\win-x64\native\cuda12",
+            "$nugetBase\llamasharp.backend.cuda12\0.25.0\runtimes\win-x64\native\cuda12"
+          )
+          $cudaSrc = $cudaSrcPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $cudaSrc) {
+            Write-Host "Available LLamaSharp packages:"
+            Get-ChildItem "$nugetBase\llamasharp*" -Directory | ForEach-Object { Write-Host "  $($_.Name)" }
+            Write-Error "FATAL: CUDA12 backend not found"
+            exit 1
+          }
+          Copy-Item "$cudaSrc\*" "$runtimesDir\cuda12" -Force
+          Write-Host "Copied CUDA12 backend from: $cudaSrc"
+
+          # === COPY ggml-cpu.dll TO cuda12 (required dependency) ===
+          Copy-Item "$runtimesDir\avx2\ggml-cpu.dll" "$runtimesDir\cuda12" -Force
+          Write-Host "Copied ggml-cpu.dll to cuda12"
+
+          # === COPY cuBLAS DLLs (NuGet doesn't include these) ===
           $sourceDir = "src/InertiCorp.Core/native/cuda12"
           $cublasDlls = @("cublas64_12.dll", "cublasLt64_12.dll", "cudart64_12.dll")
           foreach ($dll in $cublasDlls) {
@@ -202,23 +212,27 @@ jobs:
               Write-Error "FATAL: $dll not found in $sourceDir"
               exit 1
             }
-            Copy-Item $srcPath $cuda12Dir -Force
+            Copy-Item $srcPath "$runtimesDir\cuda12" -Force
             Write-Host "Copied $dll to cuda12"
           }
 
-          Write-Host "`ncuda12 directory contents:"
-          Get-ChildItem $cuda12Dir | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+          Write-Host "`n=== avx2 contents ==="
+          Get-ChildItem "$runtimesDir\avx2" | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+          Write-Host "`n=== cuda12 contents ==="
+          Get-ChildItem "$runtimesDir\cuda12" | ForEach-Object { Write-Host "  $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
         shell: pwsh
 
       - name: Verify all required DLLs are present
         run: |
           $ErrorActionPreference = "Stop"
-          $cuda12Dir = "build\data_InertiCorp.Game_windows_x86_64\runtimes\win-x64\native\cuda12"
+          $runtimesDir = "build\data_InertiCorp.Game_windows_x86_64\runtimes\win-x64\native"
 
           Write-Host "=== Verifying required DLLs ==="
+          $failed = $false
 
-          # All DLLs required for LLM to work
-          $required = @(
+          # === CHECK cuda12 (GPU backend) ===
+          Write-Host "`n--- cuda12 (GPU) ---"
+          $cuda12Required = @(
             @{Name="llama.dll"; MinMB=1},
             @{Name="ggml.dll"; MinMB=0},
             @{Name="ggml-base.dll"; MinMB=0},
@@ -228,20 +242,42 @@ jobs:
             @{Name="cublasLt64_12.dll"; MinMB=200},
             @{Name="cudart64_12.dll"; MinMB=0}
           )
-
-          $failed = $false
-          foreach ($dll in $required) {
-            $path = "$cuda12Dir\$($dll.Name)"
+          foreach ($dll in $cuda12Required) {
+            $path = "$runtimesDir\cuda12\$($dll.Name)"
             if (Test-Path $path) {
               $sizeMB = [math]::Round((Get-Item $path).Length / 1MB, 1)
               if ($sizeMB -lt $dll.MinMB) {
-                Write-Host "[FAIL] $($dll.Name) is $sizeMB MB (expected >= $($dll.MinMB) MB)"
+                Write-Host "[FAIL] cuda12/$($dll.Name) is $sizeMB MB (expected >= $($dll.MinMB) MB)"
                 $failed = $true
               } else {
-                Write-Host "[OK] $($dll.Name) ($sizeMB MB)"
+                Write-Host "[OK] cuda12/$($dll.Name) ($sizeMB MB)"
               }
             } else {
-              Write-Host "[MISSING] $($dll.Name)"
+              Write-Host "[MISSING] cuda12/$($dll.Name)"
+              $failed = $true
+            }
+          }
+
+          # === CHECK avx2 (CPU backend) ===
+          Write-Host "`n--- avx2 (CPU) ---"
+          $avx2Required = @(
+            @{Name="llama.dll"; MinMB=1},
+            @{Name="ggml.dll"; MinMB=0},
+            @{Name="ggml-base.dll"; MinMB=0},
+            @{Name="ggml-cpu.dll"; MinMB=0.5}
+          )
+          foreach ($dll in $avx2Required) {
+            $path = "$runtimesDir\avx2\$($dll.Name)"
+            if (Test-Path $path) {
+              $sizeMB = [math]::Round((Get-Item $path).Length / 1MB, 1)
+              if ($sizeMB -lt $dll.MinMB) {
+                Write-Host "[FAIL] avx2/$($dll.Name) is $sizeMB MB (expected >= $($dll.MinMB) MB)"
+                $failed = $true
+              } else {
+                Write-Host "[OK] avx2/$($dll.Name) ($sizeMB MB)"
+              }
+            } else {
+              Write-Host "[MISSING] avx2/$($dll.Name)"
               $failed = $true
             }
           }
